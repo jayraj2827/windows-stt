@@ -111,6 +111,9 @@ class WhisperEngine:
                 audio,
                 language=self.language,
                 beam_size=5,
+                initial_prompt="Hello, this is clear English speech with precise punctuation, capitalization, numbers, and technical terminology.",
+                condition_on_previous_text=False,
+                temperature=[0.0, 0.2, 0.4],
                 vad_filter=self.vad_filter,
                 vad_parameters=dict(
                     min_silence_duration_ms=400,

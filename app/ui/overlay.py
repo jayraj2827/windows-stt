@@ -128,17 +128,17 @@ class AudioWaveVisualizer(QWidget):
     def _animate_step(self):
         for i in range(self.num_bars):
             val = self.band_levels[i]
-            if val > 0.05:
-                # Active vocal frequency response: jumps immediately with speech
+            if val > 0.04:
+                # Active vocal frequency response: heights scale naturally from 3.5 to 24px
                 target = max(3.5, min(24.0, 3.5 + val * 20.5))
             else:
-                # Still resting baseline when silent (no fake sine oscillation)
+                # Clean resting baseline when silent
                 target = 3.5
 
             self.target_heights[i] = target
             diff = self.target_heights[i] - self.bar_heights[i]
-            # Fast attack (0.65) for instant reaction to words, smooth decay (0.32)
-            easing = 0.65 if diff > 0 else 0.32
+            # Fast snappy attack (0.70) for instant response to syllables, smooth organic decay (0.28)
+            easing = 0.70 if diff > 0 else 0.28
             self.bar_heights[i] += diff * easing
 
         self.update()
@@ -157,12 +157,12 @@ class AudioWaveVisualizer(QWidget):
             y = center_y - (h / 2.0)
 
             val = self.band_levels[i]
-            if val > 0.06 or h > 6.0:
+            if val > 0.05 or h > 5.5:
                 # Active speaking (Vibrant Google Material soft blue #8ab4f8)
                 color = QColor(138, 180, 248)
             else:
-                # Silent resting color (deep muted gray)
-                color = QColor(70, 74, 80)
+                # Silent resting color (deep muted dark gray dot)
+                color = QColor(60, 64, 67)
 
             painter.setBrush(QBrush(color))
             painter.setPen(Qt.PenStyle.NoPen)

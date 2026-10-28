@@ -140,32 +140,38 @@ class AudioRecorder:
             except Exception:
                 pass
 
-        # 2. Fast 6-Band FFT Spectral Decomposition (Syllable Sync)
+        # 2. Dynamic 6-Band FFT Spectral Decomposition (True Syllable & Phoneme Sync)
         if self.on_bands_callback and self._hanning is not None:
             try:
-                windowed = chunk * self._hanning
-                fft_vals = np.abs(np.fft.rfft(windowed))
+                # If silent or room ambient noise, immediately output resting silence
+                if clean_rms < 0.0008:
+                    self.on_bands_callback([0.0] * 6)
+                else:
+                    windowed = chunk * self._hanning
+                    fft_vals = np.abs(np.fft.rfft(windowed))
 
-                band_levels = []
-                for i, (start_idx, end_idx) in enumerate(self._band_slices):
-                    energy = float(np.mean(fft_vals[start_idx:end_idx]))
+                    # Speech acoustic weighting: balances human vocal fundamentals with treble sibilance
+                    weights = [0.85, 1.0, 1.15, 1.35, 1.6, 1.9]
+                    band_levels = []
 
-                    # Dynamically track noise floor for this band
-                    if energy < self._band_floors[i] * 1.6:
-                        self._band_floors[i] = self._band_floors[i] * 0.92 + energy * 0.08
+                    # Shared vocal energy reference (prevents clipping all bars into a flat wall)
+                    ref_peak = max(0.008, self._peak_rms * 2.8)
 
-                    sig = max(0.0, energy - self._band_floors[i])
+                    for i, (start_idx, end_idx) in enumerate(self._band_slices):
+                        energy = float(np.mean(fft_vals[start_idx:end_idx]))
 
-                    # Dynamically track peak voice energy for this band
-                    if sig > self._band_peaks[i]:
-                        self._band_peaks[i] = min(0.1, self._band_peaks[i] * 0.5 + sig * 0.5)
-                    else:
-                        self._band_peaks[i] = max(0.0008, self._band_peaks[i] * 0.96)
+                        # Track background floor per band
+                        if energy < self._band_floors[i] * 1.5:
+                            self._band_floors[i] = self._band_floors[i] * 0.94 + energy * 0.06
 
-                    norm_energy = min(1.0, (sig / self._band_peaks[i]) ** 0.55)
-                    band_levels.append(norm_energy)
+                        sig = max(0.0, energy - self._band_floors[i])
+                        weighted_sig = sig * weights[i]
 
-                self.on_bands_callback(band_levels)
+                        # Log-scaled response matching human acoustic perception
+                        norm_energy = min(1.0, (weighted_sig / ref_peak) ** 0.65)
+                        band_levels.append(norm_energy)
+
+                    self.on_bands_callback(band_levels)
             except Exception:
                 pass
 

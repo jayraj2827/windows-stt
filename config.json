@@ -4,7 +4,7 @@
   "compute_type": "float16",
   "hotkey_hold": "<ctrl>+<space>",
   "hotkey_toggle": "<ctrl>+<shift>+<space>",
-  "input_device_index": 9,
+  "input_device_index": null,
   "injection_method": "clipboard",
   "restore_clipboard": true,
   "overlay_enabled": true,

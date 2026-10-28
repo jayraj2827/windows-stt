@@ -130,12 +130,13 @@ class SettingsWindow(QWidget):
         lbl = QLabel("Model Variant:", card)
         self.combo_model = QComboBox(card)
         self.combo_model.addItems([
-            "small.en (Recommended, ~500MB VRAM)",
+            "small.en (Fast default, ~500MB VRAM)",
+            "large-v3-turbo (Highest Accuracy & Speed Sweet Spot, ~2.5GB VRAM)",
+            "large-v3 (Maximum Absolute Accuracy, ~3.5GB VRAM)",
+            "medium.en (High accuracy, ~1.5GB VRAM)",
             "base.en (Ultra-fast, ~250MB VRAM)",
             "tiny.en (Fastest, ~150MB VRAM)",
-            "medium.en (High accuracy, ~1.5GB VRAM)",
             "medium (Multilingual, ~1.5GB VRAM)",
-            "large-v3-turbo (Best accuracy, ~2.5GB VRAM)",
         ])
         row.addWidget(lbl)
         row.addWidget(self.combo_model, 1)
