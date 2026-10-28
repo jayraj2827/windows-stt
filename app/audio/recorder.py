@@ -52,15 +52,44 @@ class AudioRecorder:
 
     @staticmethod
     def get_input_devices() -> List[Tuple[int, str, bool]]:
-        """Enumerate all input audio devices."""
+        """
+        Enumerate genuine microphone input devices.
+        Filters out loopback speakers (Stereo Mix, PC Speaker, etc.) and legacy MME wrappers.
+        Prioritizes Windows WASAPI for bit-exact, lowest latency, highest Whisper accuracy.
+        """
         devices = []
         try:
             device_list = sd.query_devices()
-            default_input = sd.default.device[0]
+            hostapis = sd.query_hostapis()
+
             for idx, dev in enumerate(device_list):
-                if dev.get("max_input_channels", 0) > 0:
-                    is_default = (idx == default_input)
-                    devices.append((idx, dev.get("name", f"Device {idx}"), is_default))
+                if dev.get("max_input_channels", 0) <= 0:
+                    continue
+
+                name = dev.get("name", f"Device {idx}")
+                name_lower = name.lower()
+
+                # Filter out audio loopback and speaker output devices
+                if any(bad in name_lower for bad in [
+                    "speaker", "stereo mix", "sound mapper", "primary sound capture",
+                    "line out", "output", "wave out", "mapper"
+                ]):
+                    continue
+
+                api_id = dev.get("hostapi", 0)
+                api_name = hostapis[api_id]["name"] if api_id < len(hostapis) else ""
+                is_wasapi = "wasapi" in api_name.lower()
+
+                if is_wasapi:
+                    label = f"[RECOMMENDED] {name} — WASAPI (Highest Accuracy)"
+                else:
+                    label = f"{name} ({api_name})"
+
+                devices.append((idx, label, is_wasapi))
+
+            # Sort: WASAPI / Recommended at the top
+            devices.sort(key=lambda x: (not x[2], x[0]))
+
         except Exception as e:
             print(f"[AudioRecorder] Failed to list devices: {e}")
         return devices

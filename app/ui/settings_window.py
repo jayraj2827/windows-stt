@@ -1,12 +1,11 @@
 """
-Settings and Control Hub for STT Subsystem.
+Settings and Control Hub for Windows STT Subsystem.
 Google OLED Dark UI aesthetic with comprehensive system controls.
 """
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
-    QButtonGroup,
     QCheckBox,
     QComboBox,
     QFrame,
@@ -17,7 +16,6 @@ from PyQt6.QtWidgets import (
     QListWidgetItem,
     QProgressBar,
     QPushButton,
-    QRadioButton,
     QScrollArea,
     QVBoxLayout,
     QWidget,
@@ -31,6 +29,7 @@ from app.ui.styles import OLED_BLACK_QSS
 class SettingsWindow(QWidget):
     sig_settings_changed = pyqtSignal(dict)
     sig_reload_model_requested = pyqtSignal(str)
+    sig_mic_test_level = pyqtSignal(float)
 
     def __init__(self, config: Dict[str, Any], parent=None):
         super().__init__(parent)
@@ -38,10 +37,12 @@ class SettingsWindow(QWidget):
         self.test_recorder: Optional[AudioRecorder] = None
         self.is_testing_mic = False
 
-        self.setWindowTitle("Antigravity STT Subsystem — Control Hub")
-        self.setMinimumSize(640, 720)
-        self.resize(680, 780)
+        self.setWindowTitle("Windows STT — Control Hub")
+        self.setMinimumSize(660, 720)
+        self.resize(700, 780)
         self.setStyleSheet(OLED_BLACK_QSS)
+
+        self.sig_mic_test_level.connect(self._update_test_meter)
 
         self._init_ui()
         self._populate_fields()
@@ -102,7 +103,7 @@ class SettingsWindow(QWidget):
         # Bottom Action Bar
         bottom_bar = QHBoxLayout()
         self.status_feedback = QLabel("", self)
-        self.status_feedback.setStyleSheet("color: #8ab4f8; font-size: 12px;")
+        self.status_feedback.setStyleSheet("color: #8ab4f8; font-size: 12px; font-weight: 500;")
 
         save_btn = QPushButton("Save & Apply Settings", self)
         save_btn.setObjectName("primary_button")
@@ -129,9 +130,9 @@ class SettingsWindow(QWidget):
         lbl = QLabel("Model Variant:", card)
         self.combo_model = QComboBox(card)
         self.combo_model.addItems([
-            "tiny.en (Fastest, ~150MB VRAM)",
-            "base.en (Ultra-fast, ~250MB VRAM)",
             "small.en (Recommended, ~500MB VRAM)",
+            "base.en (Ultra-fast, ~250MB VRAM)",
+            "tiny.en (Fastest, ~150MB VRAM)",
             "medium.en (High accuracy, ~1.5GB VRAM)",
             "medium (Multilingual, ~1.5GB VRAM)",
             "large-v3-turbo (Best accuracy, ~2.5GB VRAM)",
@@ -141,8 +142,8 @@ class SettingsWindow(QWidget):
         layout.addLayout(row)
 
         desc = QLabel(
-            "Note: Running on your RTX 4060 GPU with float16 Tensor Cores. "
-            "Switching models will load the new weights instantly into memory.",
+            "Powered by your RTX 4060 GPU with float16 Tensor Cores. "
+            "Switching models will load the weights into memory instantly.",
             card
         )
         desc.setStyleSheet("color: #9aa0a6; font-size: 11px;")
@@ -161,7 +162,6 @@ class SettingsWindow(QWidget):
         header.setObjectName("section_header")
         layout.addWidget(header)
 
-        # Push to talk
         row1 = QHBoxLayout()
         lbl1 = QLabel("Push-to-Talk (Hold):", card)
         lbl1.setFixedWidth(160)
@@ -171,7 +171,6 @@ class SettingsWindow(QWidget):
         row1.addWidget(self.edit_hold)
         layout.addLayout(row1)
 
-        # Toggle mode
         row2 = QHBoxLayout()
         lbl2 = QLabel("Toggle Mode (Hands-Free):", card)
         lbl2.setFixedWidth(160)
@@ -182,8 +181,8 @@ class SettingsWindow(QWidget):
         layout.addLayout(row2)
 
         hint = QLabel(
-            "Push-to-Talk records while the keys are held. Toggle Mode starts on press and stops on next press.\n"
-            "Supported modifiers: <alt>, <ctrl>, <shift>, <win>, <space>, <caps_lock>, or letters (e.g. <alt>+z).",
+            "Push-to-Talk records while held down. Toggle Mode starts on press and stops on next press.\n"
+            "Supported modifiers: <ctrl>, <shift>, <win>, <alt>, <space>, <caps_lock>, or letters (e.g. <ctrl>+z).",
             card
         )
         hint.setStyleSheet("color: #9aa0a6; font-size: 11px;")
@@ -205,16 +204,27 @@ class SettingsWindow(QWidget):
         row = QHBoxLayout()
         lbl = QLabel("Input Device:", card)
         self.combo_device = QComboBox(card)
-        self.combo_device.addItem("Windows Default Audio Input", None)
-        # Populate detected devices
+
+        # Filtered, curated genuine microphones (prioritizing WASAPI)
         devices = AudioRecorder.get_input_devices()
-        for dev_idx, dev_name, is_def in devices:
-            text = f"{dev_name} {'(System Default)' if is_def else ''}"
-            self.combo_device.addItem(text, dev_idx)
+        for dev_idx, label, is_wasapi in devices:
+            self.combo_device.addItem(label, dev_idx)
+
+        # Fallback to system default if list empty
+        if self.combo_device.count() == 0:
+            self.combo_device.addItem("Windows System Default Audio Input", None)
 
         row.addWidget(lbl)
         row.addWidget(self.combo_device, 1)
         layout.addLayout(row)
+
+        desc = QLabel(
+            "Note: Filtered to show only genuine microphone inputs (excluding loopback speakers & stereo mix). "
+            "WASAPI provides bit-exact recording with zero resampling noise for maximum Whisper accuracy.",
+            card
+        )
+        desc.setStyleSheet("color: #9aa0a6; font-size: 11px;")
+        layout.addWidget(desc)
 
         # Live Audio Level Meter
         meter_layout = QHBoxLayout()
@@ -223,9 +233,11 @@ class SettingsWindow(QWidget):
         self.test_btn.clicked.connect(self._toggle_mic_test)
 
         self.audio_meter = QProgressBar(card)
+        self.audio_meter.setObjectName("mic_meter")
         self.audio_meter.setRange(0, 100)
         self.audio_meter.setValue(0)
-        self.audio_meter.setTextVisible(False)
+        self.audio_meter.setTextVisible(True)
+        self.audio_meter.setFormat("Mic Level: 0%")
 
         meter_layout.addWidget(self.test_btn)
         meter_layout.addWidget(self.audio_meter)
@@ -244,19 +256,39 @@ class SettingsWindow(QWidget):
         header.setObjectName("section_header")
         layout.addWidget(header)
 
-        self.btn_group_injection = QButtonGroup(card)
-        self.radio_clipboard = QRadioButton("Clipboard Paste (Fastest, preserves existing clipboard)", card)
-        self.radio_typing = QRadioButton("Simulated Typing (Character by character)", card)
-        self.btn_group_injection.addButton(self.radio_clipboard)
-        self.btn_group_injection.addButton(self.radio_typing)
-
-        layout.addWidget(self.radio_clipboard)
-        layout.addWidget(self.radio_typing)
-
+        # Checkboxes for text injection mode
+        self.check_clipboard = QCheckBox("Clipboard Paste (Recommended — Instant & preserves existing clipboard)", card)
+        self.check_typing = QCheckBox("Simulated Typing (Character by character fallback)", card)
         self.check_overlay = QCheckBox("Show floating status pill widget while speaking", card)
+
+        self.check_clipboard.toggled.connect(self._on_clipboard_toggled)
+        self.check_typing.toggled.connect(self._on_typing_toggled)
+
+        layout.addWidget(self.check_clipboard)
+        layout.addWidget(self.check_typing)
         layout.addWidget(self.check_overlay)
 
         return card
+
+    def _on_clipboard_toggled(self, checked: bool):
+        if checked:
+            self.check_typing.blockSignals(True)
+            self.check_typing.setChecked(False)
+            self.check_typing.blockSignals(False)
+        elif not self.check_typing.isChecked():
+            self.check_clipboard.blockSignals(True)
+            self.check_clipboard.setChecked(True)
+            self.check_clipboard.blockSignals(False)
+
+    def _on_typing_toggled(self, checked: bool):
+        if checked:
+            self.check_clipboard.blockSignals(True)
+            self.check_clipboard.setChecked(False)
+            self.check_clipboard.blockSignals(False)
+        elif not self.check_clipboard.isChecked():
+            self.check_typing.blockSignals(True)
+            self.check_typing.setChecked(True)
+            self.check_typing.blockSignals(False)
 
     def _create_history_card(self) -> QFrame:
         card = QFrame(self)
@@ -287,37 +319,44 @@ class SettingsWindow(QWidget):
                 break
 
         # Hotkeys
-        self.edit_hold.setText(self.config.get("hotkey_hold", "<alt>+<space>"))
-        self.edit_toggle.setText(self.config.get("hotkey_toggle", "<alt>+<shift>+<space>"))
+        self.edit_hold.setText(self.config.get("hotkey_hold", "<ctrl>+<space>"))
+        self.edit_toggle.setText(self.config.get("hotkey_toggle", "<ctrl>+<shift>+<space>"))
 
         # Input device
         selected_dev = self.config.get("input_device_index")
-        for i in range(self.combo_device.count()):
-            if self.combo_device.itemData(i) == selected_dev:
-                self.combo_device.setCurrentIndex(i)
-                break
+        matched = False
+        if selected_dev is not None:
+            for i in range(self.combo_device.count()):
+                if self.combo_device.itemData(i) == selected_dev:
+                    self.combo_device.setCurrentIndex(i)
+                    matched = True
+                    break
+        # If no custom device set, default to index 0 (which is the recommended WASAPI device)
+        if not matched and self.combo_device.count() > 0:
+            self.combo_device.setCurrentIndex(0)
 
-        # Injection
+        # Injection checkboxes
         method = self.config.get("injection_method", "clipboard")
         if method == "typing":
-            self.radio_typing.setChecked(True)
+            self.check_typing.setChecked(True)
+            self.check_clipboard.setChecked(False)
         else:
-            self.radio_clipboard.setChecked(True)
+            self.check_clipboard.setChecked(True)
+            self.check_typing.setChecked(False)
 
         self.check_overlay.setChecked(self.config.get("overlay_enabled", True))
 
     def _toggle_mic_test(self):
         """Toggle live microphone volume testing."""
         if self.is_testing_mic:
-            # Stop test
             if self.test_recorder:
                 self.test_recorder.stop()
                 self.test_recorder = None
             self.audio_meter.setValue(0)
+            self.audio_meter.setFormat("Mic Level: 0%")
             self.test_btn.setText("Test Microphone")
             self.is_testing_mic = False
         else:
-            # Start test
             dev_idx = self.combo_device.currentData()
             self.test_recorder = AudioRecorder()
             self.test_recorder.set_level_callback(self._on_mic_level)
@@ -328,8 +367,14 @@ class SettingsWindow(QWidget):
                 self.status_feedback.setText("Could not start test microphone.")
 
     def _on_mic_level(self, level: float):
-        val = int(level * 100)
-        QTimer.singleShot(0, lambda: self.audio_meter.setValue(val))
+        """Callback from PortAudio thread — safely emit Qt signal."""
+        self.sig_mic_test_level.emit(level)
+
+    def _update_test_meter(self, level: float):
+        """Executed on Qt GUI Main Thread to update visual meter."""
+        val = max(0, min(100, int(level * 100)))
+        self.audio_meter.setValue(val)
+        self.audio_meter.setFormat(f"Live Input Level: {val}%")
 
     def add_history_entry(self, text: str, latency: float):
         """Add completed transcription to the history list."""
@@ -343,19 +388,17 @@ class SettingsWindow(QWidget):
             self.history_list.takeItem(self.history_list.count() - 1)
 
     def _save_and_apply(self):
-        # Stop mic test if running
         if self.is_testing_mic:
             self._toggle_mic_test()
 
-        # Extract selected model
         raw_model = self.combo_model.currentText().split(" ")[0]
         model_changed = (raw_model != self.config.get("model_name"))
 
         self.config["model_name"] = raw_model
-        self.config["hotkey_hold"] = self.edit_hold.text().strip() or "<alt>+<space>"
-        self.config["hotkey_toggle"] = self.edit_toggle.text().strip() or "<alt>+<shift>+<space>"
+        self.config["hotkey_hold"] = self.edit_hold.text().strip() or "<ctrl>+<space>"
+        self.config["hotkey_toggle"] = self.edit_toggle.text().strip() or "<ctrl>+<shift>+<space>"
         self.config["input_device_index"] = self.combo_device.currentData()
-        self.config["injection_method"] = "typing" if self.radio_typing.isChecked() else "clipboard"
+        self.config["injection_method"] = "typing" if self.check_typing.isChecked() else "clipboard"
         self.config["overlay_enabled"] = self.check_overlay.isChecked()
 
         save_config(self.config)
@@ -368,8 +411,6 @@ class SettingsWindow(QWidget):
         QTimer.singleShot(2500, lambda: self.status_feedback.setText(""))
 
     def closeEvent(self, event):
-        # Stop mic test if user closes window
         if self.is_testing_mic:
             self._toggle_mic_test()
         super().closeEvent(event)
-

@@ -4,12 +4,11 @@
   "compute_type": "float16",
   "hotkey_hold": "<ctrl>+<space>",
   "hotkey_toggle": "<ctrl>+<shift>+<space>",
-  "input_device_index": null,
-  "injection_method": "clipboard",
+  "input_device_index": 9,
+  "injection_method": "typing",
   "restore_clipboard": true,
   "overlay_enabled": true,
   "language": "en",
   "vad_filter": true,
   "sound_feedback": true
 }
-

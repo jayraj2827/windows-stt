@@ -154,12 +154,29 @@ QProgressBar {
     text-align: center;
     color: #ffffff;
     font-size: 10px;
-    min-height: 12px;
-    max-height: 12px;
+    min-height: 14px;
+    max-height: 14px;
 }
 
 QProgressBar::chunk {
     background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #8ab4f8, stop:1 #34a853);
+    border-radius: 5px;
+}
+
+QProgressBar#mic_meter {
+    background-color: #0c0c0c;
+    border: 1px solid #333333;
+    border-radius: 6px;
+    text-align: center;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 600;
+    min-height: 22px;
+    max-height: 22px;
+}
+
+QProgressBar#mic_meter::chunk {
+    background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #8ab4f8, stop:0.6 #81c995, stop:1.0 #34a853);
     border-radius: 5px;
 }
 
