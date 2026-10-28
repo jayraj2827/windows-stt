@@ -14,6 +14,8 @@ if exist ".stt.pid" (
     del .stt.pid >nul 2>&1
 )
 taskkill /F /IM pythonw.exe >nul 2>&1
+taskkill /F /FI "WINDOWTITLE eq Friday STT - Control Hub" >nul 2>&1
+taskkill /F /FI "WINDOWTITLE eq Friday STT — Control Hub" >nul 2>&1
 taskkill /F /FI "WINDOWTITLE eq Windows STT*" >nul 2>&1
 taskkill /F /FI "WINDOWTITLE eq Antigravity STT*" >nul 2>&1
 ping 127.0.0.1 -n 2 >nul
@@ -30,7 +32,7 @@ echo    - To Stop: Close this window or press Ctrl+C.
 echo ==============================================================
 echo.
 
-".venv\Scripts\python.exe" -m app.main --settings
+"%~dp0.venv\Scripts\python.exe" -m app.main --settings
 
 echo.
 echo ==============================================================
