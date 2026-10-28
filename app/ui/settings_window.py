@@ -37,7 +37,7 @@ class SettingsWindow(QWidget):
         self.test_recorder: Optional[AudioRecorder] = None
         self.is_testing_mic = False
 
-        self.setWindowTitle("Windows STT — Control Hub")
+        self.setWindowTitle("Friday STT — Control Hub")
         self.setMinimumSize(660, 720)
         self.resize(700, 780)
         self.setStyleSheet(OLED_BLACK_QSS)
@@ -56,7 +56,7 @@ class SettingsWindow(QWidget):
         header_layout = QHBoxLayout()
         header_text_layout = QVBoxLayout()
 
-        title = QLabel("Voice Typing Subsystem", self)
+        title = QLabel("Friday Voice Typing System", self)
         title.setObjectName("title_label")
         subtitle = QLabel("Background Faster-Whisper subsystem powered by NVIDIA CUDA", self)
         subtitle.setObjectName("subtitle_label")

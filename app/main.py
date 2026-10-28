@@ -1,5 +1,5 @@
 """
-Main application coordinator for Windows STT Subsystem.
+Main application coordinator for Friday STT System.
 Integrates Audio Recorder, Whisper Engine, Global Hotkeys, Floating Overlay, and Settings Hub.
 Includes Single-Instance enforcement, Windows Process ID tracking, and named application identity.
 """
@@ -23,7 +23,7 @@ from app.ui.settings_window import SettingsWindow
 from app.ui.tray import TrayManager
 
 PID_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".stt.pid")
-MUTEX_NAME = "Global\\WindowsSTT_VoiceTyping_SingleInstance"
+MUTEX_NAME = "Global\\FridaySTT_VoiceSystem_SingleInstance"
 
 
 def ensure_single_instance():
@@ -38,7 +38,7 @@ def ensure_single_instance():
             return None
         return mutex
     except Exception as e:
-        print(f"[Windows STT] Mutex warning: {e}")
+        print(f"[Friday STT] Mutex warning: {e}")
         return None
 
 
@@ -140,12 +140,12 @@ class AppCoordinator(QObject):
                 badge_text = f"⚡ RTX 4060 — CUDA ({self.whisper_engine.compute_type})"
             self.settings_window.gpu_badge.setText(badge_text)
             self.tray.show_message(
-                "Windows STT Ready",
+                "Friday STT Ready",
                 f"Model '{self.whisper_engine.model_name}' active on {self.whisper_engine.active_device.upper()}"
             )
         else:
             self.settings_window.gpu_badge.setText("❌ Model Failed")
-            self.tray.show_message("Windows STT Error", msg)
+            self.tray.show_message("Friday STT Error", msg)
 
     def _on_hotkey_start_record(self, mode: str):
         self.sig_start_recording.emit(mode)
@@ -260,7 +260,7 @@ def main():
     # Set Windows Application User Model ID for clean Task Manager identification
     if sys.platform == "win32":
         try:
-            app_id = "Antigravity.WindowsSTT.VoiceSubsystem.1.0"
+            app_id = "Friday.STT.System.1.0"
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
         except Exception:
             pass
@@ -268,13 +268,13 @@ def main():
     # Enforce single instance with auto-reload capability
     mutex = ensure_single_instance()
     if sys.platform == "win32" and mutex is None:
-        print("[Windows STT] Existing background instance detected.")
+        print("[Friday STT] Existing background instance detected.")
         import subprocess
         import time
 
         # If launched via debug or reload flag, automatically reload fresh instance
         if "--settings" in sys.argv or "--reload" in sys.argv:
-            print("[Windows STT] Auto-reloading: terminating previous background instance...")
+            print("[Friday STT] Auto-reloading: terminating previous background instance...")
             try:
                 if os.path.exists(PID_FILE):
                     with open(PID_FILE, "r") as f:
@@ -291,8 +291,8 @@ def main():
             app_check = QApplication(sys.argv)
             box = QMessageBox()
             box.setIcon(QMessageBox.Icon.Question)
-            box.setWindowTitle("Windows STT")
-            box.setText("Windows STT is currently running in the background.\n\nWould you like to restart it with the latest updates?")
+            box.setWindowTitle("Friday STT")
+            box.setText("Friday STT is currently running in the background.\n\nWould you like to restart it with the latest updates?")
             restart_btn = box.addButton("Restart & Reload", QMessageBox.ButtonRole.AcceptRole)
             box.addButton("Keep Running", QMessageBox.ButtonRole.RejectRole)
             box.exec()
@@ -311,9 +311,9 @@ def main():
     atexit.register(cleanup_pid)
 
     app = QApplication(sys.argv)
-    app.setApplicationName("Windows STT")
-    app.setApplicationDisplayName("Windows STT — Voice Typing Subsystem")
-    app.setOrganizationName("Antigravity")
+    app.setApplicationName("Friday STT")
+    app.setApplicationDisplayName("Friday STT — Voice Typing System")
+    app.setOrganizationName("Friday AI")
     app.setQuitOnLastWindowClosed(False)
 
     config = load_config()

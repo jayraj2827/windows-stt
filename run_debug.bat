@@ -1,10 +1,10 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-title Windows STT - Console Debug Mode
+title Friday STT - Console Debug Mode
 
 echo ==============================================================
-echo   Windows STT Subsystem — Starting in Debug Mode
+echo   Friday STT System — Starting in Debug Mode
 echo ==============================================================
 
 :: Cleanly stop any existing background instance first so latest code is loaded
@@ -18,8 +18,9 @@ timeout /t 1 /nobreak >nul
 
 echo.
 echo ==============================================================
-echo   [RUNNING] Windows STT Subsystem — Console Debug Mode
+echo   [RUNNING] Friday STT System — Console Debug Mode
 echo ==============================================================
+echo    - Assistant: Friday STT System
 echo    - GPU: NVIDIA RTX 4060 (CUDA Float16)
 echo    - Real-time Faster-Whisper logs and events will appear below.
 echo    - The Control Hub will open automatically.
@@ -31,7 +32,7 @@ echo.
 
 echo.
 echo ==============================================================
-echo   [STOPPED] Windows STT Debug session has ended.
+echo   [STOPPED] Friday STT Debug session has ended.
 echo ==============================================================
 echo.
 echo Press any key to close this window . . .

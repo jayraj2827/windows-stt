@@ -1,10 +1,10 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-title Windows STT - Stop Subsystem
+title Friday STT - Stop System
 
 echo ==============================================================
-echo   Windows STT Subsystem — Stopping
+echo   Friday STT System — Stopping
 echo ==============================================================
 
 :: 1. Terminate PID from .stt.pid if present
@@ -24,9 +24,9 @@ powershell -NoProfile -Command "Get-CimInstance Win32_Process -ErrorAction Silen
 
 echo.
 echo ==============================================================
-echo   [SUCCESS] Windows STT Subsystem has been STOPPED.
+echo   [SUCCESS] Friday STT System has been STOPPED.
 echo ==============================================================
-echo   All background voice recognition processes are terminated.
+echo   All Friday STT background processes are terminated.
 echo ==============================================================
 echo.
 echo Press any key to close this window . . .

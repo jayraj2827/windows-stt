@@ -1,10 +1,10 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-title Windows STT - Launcher
+title Friday STT - Launcher
 
 echo ==============================================================
-echo   Windows STT Subsystem — Starting
+echo   Friday STT System — Starting
 echo ==============================================================
 
 if not exist ".venv\Scripts\python.exe" (
@@ -30,8 +30,9 @@ timeout /t 2 /nobreak >nul
 
 echo.
 echo ==============================================================
-echo   [SUCCESS] Windows STT Subsystem is RUNNING in background!
+echo   [SUCCESS] Friday STT System is RUNNING in background!
 echo ==============================================================
+echo    - Assistant:    Friday STT System
 echo    - Acceleration: NVIDIA RTX 4060 GPU (CUDA Float16)
 echo    - Push-to-Talk: Hold [Ctrl + Space], speak, release to paste
 echo    - Hands-Free:   Press [Ctrl + Shift + Space] to toggle

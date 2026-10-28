@@ -52,7 +52,7 @@ class TrayManager(QObject):
         self.current_model = current_model
         self.tray = QSystemTrayIcon(parent)
         self.tray.setIcon(create_tray_icon())
-        self.tray.setToolTip("Antigravity Voice Typing (Faster-Whisper CUDA)")
+        self.tray.setToolTip("Friday Voice Typing (Faster-Whisper CUDA)")
 
         self._build_menu()
         self.tray.activated.connect(self._on_tray_activated)
@@ -84,7 +84,7 @@ class TrayManager(QObject):
         """)
 
         # Title Item
-        title_action = menu.addAction("🎙 Antigravity Voice Subsystem")
+        title_action = menu.addAction("🎙 Friday STT System")
         title_action.setEnabled(False)
         menu.addSeparator()
 

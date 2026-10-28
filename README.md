@@ -1,6 +1,6 @@
-# Windows STT — Antigravity Voice Typing Subsystem (Faster-Whisper CUDA)
+# Friday STT — Voice Typing System (Faster-Whisper CUDA)
 
-A lightning-fast, system-wide Speech-to-Text background utility designed for Windows, powered by **Faster-Whisper** with full **NVIDIA CUDA GPU acceleration (RTX 4060 8GB)** and a Google-inspired OLED True Black interface.
+A lightning-fast, system-wide Speech-to-Text background utility powered by **Faster-Whisper** with full **NVIDIA CUDA GPU acceleration (RTX 4060 8GB)** and a Google-inspired OLED True Black interface.
 
 ---
 
