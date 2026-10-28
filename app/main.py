@@ -1,13 +1,17 @@
 """
-Main application coordinator for STT Background Subsystem.
+Main application coordinator for Windows STT Subsystem.
 Integrates Audio Recorder, Whisper Engine, Global Hotkeys, Floating Overlay, and Settings Hub.
+Includes Single-Instance enforcement, Windows Process ID tracking, and named application identity.
 """
+import atexit
+import ctypes
+import os
 import sys
 import threading
 from typing import Any, Dict, Optional
 import numpy as np
 from PyQt6.QtCore import QObject, Qt, pyqtSignal
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QMessageBox
 
 from app.audio.recorder import AudioRecorder
 from app.config import load_config, save_config
@@ -18,9 +22,45 @@ from app.ui.overlay import FloatingOverlay
 from app.ui.settings_window import SettingsWindow
 from app.ui.tray import TrayManager
 
+PID_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".stt.pid")
+MUTEX_NAME = "Global\\WindowsSTT_VoiceTyping_SingleInstance"
+
+
+def ensure_single_instance():
+    """Ensure only one instance runs at a time via Windows named mutex."""
+    if sys.platform != "win32":
+        return None
+    try:
+        kernel32 = ctypes.windll.kernel32
+        mutex = kernel32.CreateMutexW(None, True, MUTEX_NAME)
+        ERROR_ALREADY_EXISTS = 183
+        if kernel32.GetLastError() == ERROR_ALREADY_EXISTS:
+            return None
+        return mutex
+    except Exception as e:
+        print(f"[Windows STT] Mutex warning: {e}")
+        return None
+
+
+def register_pid():
+    """Save current process PID for stop.bat."""
+    try:
+        with open(PID_FILE, "w", encoding="utf-8") as f:
+            f.write(str(os.getpid()))
+    except Exception:
+        pass
+
+
+def cleanup_pid():
+    """Remove PID file on clean exit."""
+    try:
+        if os.path.exists(PID_FILE):
+            os.remove(PID_FILE)
+    except Exception:
+        pass
+
 
 class AppCoordinator(QObject):
-    # Signals for thread-safe cross-thread communication to Qt UI
     sig_start_recording = pyqtSignal(str)
     sig_stop_recording = pyqtSignal(str)
     sig_transcription_finished = pyqtSignal(str, float)
@@ -54,8 +94,8 @@ class AppCoordinator(QObject):
 
         # 3. Hotkey Listener
         self.hotkeys = HotkeyListener(
-            hotkey_hold_str=self.config.get("hotkey_hold", "<alt>+<space>"),
-            hotkey_toggle_str=self.config.get("hotkey_toggle", "<alt>+<shift>+<space>"),
+            hotkey_hold_str=self.config.get("hotkey_hold", "<ctrl>+<space>"),
+            hotkey_toggle_str=self.config.get("hotkey_toggle", "<ctrl>+<shift>+<space>"),
             on_start_record=self._on_hotkey_start_record,
             on_stop_record=self._on_hotkey_stop_record,
         )
@@ -67,23 +107,19 @@ class AppCoordinator(QObject):
         self._start_initialization()
 
     def _wire_signals(self):
-        # Hotkey -> Coordinator slots
         self.sig_start_recording.connect(self._handle_start_recording)
         self.sig_stop_recording.connect(self._handle_stop_recording)
         self.sig_transcription_finished.connect(self._handle_transcription_finished)
 
-        # Settings Window signals
         self.settings_window.sig_settings_changed.connect(self._on_settings_updated)
         self.settings_window.sig_reload_model_requested.connect(self._reload_model)
 
-        # Tray signals
         self.tray.sig_open_settings.connect(self._show_settings)
         self.tray.sig_toggle_recording.connect(self._toggle_recording_manual)
         self.tray.sig_switch_model.connect(self._reload_model)
         self.tray.sig_exit.connect(self._exit_app)
 
     def _start_initialization(self):
-        # Load model on worker thread
         def load_worker():
             success, msg = self.whisper_engine.load_model()
             self.sig_model_status.emit(success, msg)
@@ -91,7 +127,6 @@ class AppCoordinator(QObject):
         self.sig_model_status.connect(self._on_model_loaded)
         threading.Thread(target=load_worker, daemon=True).start()
 
-        # Start hotkeys
         self.hotkeys.start()
         self.tray.show()
 
@@ -101,12 +136,14 @@ class AppCoordinator(QObject):
             if self.whisper_engine.active_device == "cuda":
                 badge_text = f"⚡ RTX 4060 — CUDA ({self.whisper_engine.compute_type})"
             self.settings_window.gpu_badge.setText(badge_text)
-            self.tray.show_message("STT Subsystem Ready", f"Loaded '{self.whisper_engine.model_name}' on {self.whisper_engine.active_device.upper()}")
+            self.tray.show_message(
+                "Windows STT Ready",
+                f"Model '{self.whisper_engine.model_name}' active on {self.whisper_engine.active_device.upper()}"
+            )
         else:
             self.settings_window.gpu_badge.setText("❌ Model Failed")
-            self.tray.show_message("STT Subsystem Error", msg)
+            self.tray.show_message("Windows STT Error", msg)
 
-    # Hotkey thread callbacks (invoke signals to hop to Qt main thread)
     def _on_hotkey_start_record(self, mode: str):
         self.sig_start_recording.emit(mode)
 
@@ -125,11 +162,9 @@ class AppCoordinator(QObject):
             self.overlay.sig_transcription_done.emit("", 0.0)
             return
 
-        # Show transcribing state on overlay
         if self.config.get("overlay_enabled", True):
             self.overlay.sig_transcribing.emit()
 
-        # Run transcription on background thread
         threading.Thread(
             target=self._transcribe_worker,
             args=(audio_data,),
@@ -141,30 +176,25 @@ class AppCoordinator(QObject):
         text = result.get("text", "")
         latency = result.get("latency", 0.0)
 
-        # Inject text into active window
         if text:
             self.injector.inject(text)
 
         self.sig_transcription_finished.emit(text, latency)
 
     def _handle_transcription_finished(self, text: str, latency: float):
-        # Update overlay
         if self.config.get("overlay_enabled", True):
             self.overlay.sig_transcription_done.emit(text, latency)
 
-        # Update settings history
         self.settings_window.add_history_entry(text, latency)
 
     def _on_settings_updated(self, new_config: Dict[str, Any]):
         self.config = new_config
-        # Update injector
         self.injector.method = self.config.get("injection_method", "clipboard")
-        # Update hotkeys
         self.hotkeys.update_hotkeys(
-            self.config.get("hotkey_hold", "<alt>+<space>"),
-            self.config.get("hotkey_toggle", "<alt>+<shift>+<space>"),
+            self.config.get("hotkey_hold", "<ctrl>+<space>"),
+            self.config.get("hotkey_toggle", "<ctrl>+<shift>+<space>"),
         )
-        print("[AppCoordinator] Subsystem configuration dynamically updated.")
+        print("[Windows STT] Configuration dynamically updated.")
 
     def _reload_model(self, model_name: str):
         self.config["model_name"] = model_name
@@ -192,28 +222,55 @@ class AppCoordinator(QObject):
         self.settings_window.activateWindow()
 
     def _exit_app(self):
-        print("[AppCoordinator] Shutting down STT subsystem...")
+        print("[Windows STT] Shutting down subsystem...")
         self.hotkeys.stop()
         if self.recorder.is_recording:
             self.recorder.stop()
+        cleanup_pid()
         QApplication.quit()
 
 
 def main():
-    # Enable high DPI scaling
+    # Set Windows Application User Model ID for clean Task Manager identification
+    if sys.platform == "win32":
+        try:
+            app_id = "Antigravity.WindowsSTT.VoiceSubsystem.1.0"
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
+        except Exception:
+            pass
+
+    # Enforce single instance
+    mutex = ensure_single_instance()
+    if sys.platform == "win32" and mutex is None:
+        print("[Windows STT] Another instance of Windows STT is already running!")
+        # If launched with a GUI, show a brief informational alert
+        app_check = QApplication(sys.argv)
+        box = QMessageBox()
+        box.setIcon(QMessageBox.Icon.Information)
+        box.setWindowTitle("Windows STT")
+        box.setText("Windows STT is already running in the background!\n\nLook for the cyan microphone icon in your Windows System Tray (near the clock).")
+        box.exec()
+        sys.exit(0)
+
+    register_pid()
+    atexit.register(cleanup_pid)
+
     app = QApplication(sys.argv)
-    app.setQuitOnLastWindowClosed(False)  # Keep running in system tray
+    app.setApplicationName("Windows STT")
+    app.setApplicationDisplayName("Windows STT — Voice Typing Subsystem")
+    app.setOrganizationName("Antigravity")
+    app.setQuitOnLastWindowClosed(False)
 
     config = load_config()
     coordinator = AppCoordinator(config)
 
-    # If launched with --settings flag or first time, show settings
     if "--settings" in sys.argv:
         coordinator._show_settings()
 
-    sys.exit(app.exec())
+    ret = app.exec()
+    cleanup_pid()
+    sys.exit(ret)
 
 
 if __name__ == "__main__":
     main()
-

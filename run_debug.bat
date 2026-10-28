@@ -1,7 +1,8 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-echo Starting Antigravity STT in Debug / Console mode...
+title Windows STT - Console Debug Mode
+echo Starting Windows STT in Debug / Console mode...
 ".venv\Scripts\python.exe" -m app.main --settings
 pause
 

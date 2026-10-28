@@ -25,9 +25,13 @@ A lightning-fast, system-wide Speech-to-Text background utility designed for Win
 
 ## 🚀 Quick Start
 
-### 1. Launch the Subsystem
-- **Double-click `run.bat`**: Starts the subsystem silently in the background (accessible via the System Tray icon near your Windows clock).
-- **Double-click `run_debug.bat`**: Starts the subsystem with a console window and opens the Control Hub immediately.
+### 1. Launch & Stop
+- **To Start**: Double-click **`run.bat`** (runs silently in the background with the cyan microphone icon in your Windows System Tray).
+- **To Stop**: Double-click **`stop.bat`** (instantly terminates any running instance).
+- **To Debug / Test**: Double-click **`run_debug.bat`** (opens the Control Hub & console).
+- **From Tray**: Right-click the cyan microphone icon in your Windows Taskbar tray (click `^` overflow if hidden) -> click **Exit Subsystem**.
+
+> **Single-Instance Protection**: A Windows named mutex prevents duplicate instances from running. Launching `run.bat` when an instance is already active simply alerts you without creating conflicts.
 
 ### 2. Default Hotkeys
 | Action | Default Hotkey | Behavior |

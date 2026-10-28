@@ -2,8 +2,9 @@
 setlocal
 cd /d "%~dp0"
 
+title Windows STT Subsystem
 echo ========================================================
-echo  Antigravity Voice Typing Subsystem (Faster-Whisper CUDA)
+echo  Windows STT Subsystem (Faster-Whisper CUDA)
 echo ========================================================
 
 if not exist ".venv\Scripts\python.exe" (
