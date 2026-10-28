@@ -265,18 +265,47 @@ def main():
         except Exception:
             pass
 
-    # Enforce single instance
+    # Enforce single instance with auto-reload capability
     mutex = ensure_single_instance()
     if sys.platform == "win32" and mutex is None:
-        print("[Windows STT] Another instance of Windows STT is already running!")
-        # If launched with a GUI, show a brief informational alert
-        app_check = QApplication(sys.argv)
-        box = QMessageBox()
-        box.setIcon(QMessageBox.Icon.Information)
-        box.setWindowTitle("Windows STT")
-        box.setText("Windows STT is already running in the background!\n\nLook for the cyan microphone icon in your Windows System Tray (near the clock).")
-        box.exec()
-        sys.exit(0)
+        print("[Windows STT] Existing background instance detected.")
+        import subprocess
+        import time
+
+        # If launched via debug or reload flag, automatically reload fresh instance
+        if "--settings" in sys.argv or "--reload" in sys.argv:
+            print("[Windows STT] Auto-reloading: terminating previous background instance...")
+            try:
+                if os.path.exists(PID_FILE):
+                    with open(PID_FILE, "r") as f:
+                        old_pid = f.read().strip()
+                    subprocess.run(["taskkill", "/F", "/PID", old_pid], capture_output=True)
+                subprocess.run(["taskkill", "/F", "/IM", "pythonw.exe"], capture_output=True)
+                time.sleep(0.8)
+                mutex = ensure_single_instance()
+            except Exception:
+                pass
+
+        # If still locked by an instance, offer one-click Restart & Reload
+        if mutex is None:
+            app_check = QApplication(sys.argv)
+            box = QMessageBox()
+            box.setIcon(QMessageBox.Icon.Question)
+            box.setWindowTitle("Windows STT")
+            box.setText("Windows STT is currently running in the background.\n\nWould you like to restart it with the latest updates?")
+            restart_btn = box.addButton("Restart & Reload", QMessageBox.ButtonRole.AcceptRole)
+            box.addButton("Keep Running", QMessageBox.ButtonRole.RejectRole)
+            box.exec()
+
+            if box.clickedButton() == restart_btn:
+                try:
+                    subprocess.run(["taskkill", "/F", "/IM", "pythonw.exe"], capture_output=True)
+                    time.sleep(0.8)
+                    mutex = ensure_single_instance()
+                except Exception:
+                    pass
+            else:
+                sys.exit(0)
 
     register_pid()
     atexit.register(cleanup_pid)

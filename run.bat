@@ -13,7 +13,16 @@ if not exist ".venv\Scripts\python.exe" (
     exit /b 1
 )
 
-:: Launch the background subsystem via pythonw.exe
+:: Cleanly terminate any older instance first so latest code always loads
+if exist ".stt.pid" (
+    set /p OLD_PID=<.stt.pid
+    if not "%OLD_PID%"=="" taskkill /F /PID %OLD_PID% >nul 2>&1
+    del .stt.pid >nul 2>&1
+)
+taskkill /F /IM pythonw.exe >nul 2>&1
+timeout /t 1 /nobreak >nul
+
+:: Launch the fresh background subsystem via pythonw.exe
 start "" ".venv\Scripts\pythonw.exe" -m app.main %*
 
 :: Wait briefly for startup

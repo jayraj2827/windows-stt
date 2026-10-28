@@ -7,28 +7,20 @@ echo ==============================================================
 echo   Windows STT Subsystem — Stopping
 echo ==============================================================
 
-set STOPPED=0
-
-:: Check PID file first
+:: 1. Terminate PID from .stt.pid if present
 if exist ".stt.pid" (
     set /p PID=<.stt.pid
     if not "%PID%"=="" (
         taskkill /F /PID %PID% >nul 2>&1
-        if %ERRORLEVEL% equ 0 set STOPPED=1
     )
     del .stt.pid >nul 2>&1
 )
 
-:: Terminate any python processes running out of our local .venv directory
-for /f "tokens=2" %%A in ('tasklist /nh /fi "imagename eq pythonw.exe" 2^>nul') do (
-    wmic process where "ProcessId=%%A and ExecutablePath like '%%STT\\.venv%%'" call terminate >nul 2>&1
-    if %ERRORLEVEL% equ 0 set STOPPED=1
-)
+:: 2. Force terminate any background pythonw.exe
+taskkill /F /IM pythonw.exe >nul 2>&1
 
-for /f "tokens=2" %%A in ('tasklist /nh /fi "imagename eq python.exe" 2^>nul') do (
-    wmic process where "ProcessId=%%A and ExecutablePath like '%%STT\\.venv%%'" call terminate >nul 2>&1
-    if %ERRORLEVEL% equ 0 set STOPPED=1
-)
+:: 3. Force terminate any lingering python.exe running app.main
+powershell -NoProfile -Command "Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like '*app.main*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }" >nul 2>&1
 
 echo.
 echo ==============================================================
