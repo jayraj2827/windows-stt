@@ -16,7 +16,7 @@ if exist ".stt.pid" (
 taskkill /F /IM pythonw.exe >nul 2>&1
 taskkill /F /FI "WINDOWTITLE eq Windows STT*" >nul 2>&1
 taskkill /F /FI "WINDOWTITLE eq Antigravity STT*" >nul 2>&1
-timeout /t 1 /nobreak >nul
+ping 127.0.0.1 -n 2 >nul
 
 echo.
 echo ==============================================================

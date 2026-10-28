@@ -5,7 +5,7 @@
   "hotkey_hold": "<ctrl>+<space>",
   "hotkey_toggle": "<ctrl>+<shift>+<space>",
   "input_device_index": 9,
-  "injection_method": "typing",
+  "injection_method": "clipboard",
   "restore_clipboard": true,
   "overlay_enabled": true,
   "language": "en",

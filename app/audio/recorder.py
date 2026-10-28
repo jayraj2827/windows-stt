@@ -238,8 +238,30 @@ class AudioRecorder:
             except Exception:
                 continue
 
+        if not opened and device_index is not None:
+            print(f"[AudioRecorder] Device {device_index} failed, falling back to system default input...")
+            for rate in [16000, 48000, 44100]:
+                try:
+                    block = int(rate * 0.032)
+                    self.stream = sd.InputStream(
+                        samplerate=rate,
+                        channels=1,
+                        dtype="float32",
+                        device=None,
+                        blocksize=block,
+                        callback=self._audio_callback,
+                    )
+                    self.stream.start()
+                    self.active_sample_rate = rate
+                    self.blocksize = block
+                    self._configure_spectral_analyzer(rate, block)
+                    opened = True
+                    break
+                except Exception:
+                    continue
+
         if not opened:
-            print(f"[AudioRecorder] Failed to open audio input on device {device_index}")
+            print(f"[AudioRecorder] Failed to open audio input on device {device_index} and fallback")
             self.is_recording = False
             return False
 

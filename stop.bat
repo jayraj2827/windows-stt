@@ -19,8 +19,10 @@ if exist ".stt.pid" (
 :: 2. Force terminate any background pythonw.exe
 taskkill /F /IM pythonw.exe >nul 2>&1
 
-:: 3. Terminate any window matching Friday STT, Windows STT, or Antigravity
-taskkill /F /FI "WINDOWTITLE eq Friday STT*" >nul 2>&1
+:: 3. Terminate any previous Hub or Debug windows
+taskkill /F /FI "WINDOWTITLE eq Friday STT - Control Hub" >nul 2>&1
+taskkill /F /FI "WINDOWTITLE eq Friday STT — Control Hub" >nul 2>&1
+taskkill /F /FI "WINDOWTITLE eq Friday STT - Console Debug Mode" >nul 2>&1
 taskkill /F /FI "WINDOWTITLE eq Windows STT*" >nul 2>&1
 taskkill /F /FI "WINDOWTITLE eq Antigravity STT*" >nul 2>&1
 
