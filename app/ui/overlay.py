@@ -102,16 +102,15 @@ class AudioWaveVisualizer(QWidget):
     """
     Real-time 6-band FFT spectral equalizer.
     Bands correspond to real voice acoustic spectrum (vowel pitch, resonance, formants, consonants, sibilance).
-    Syncs 1:1 with spoken syllables and words.
+    100% reactive to vocal input with zero artificial sine oscillations.
     """
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setFixedSize(58, 26)
         self.num_bars = 6
         self.band_levels = [0.0] * self.num_bars
-        self.bar_heights = [4.0] * self.num_bars
-        self.target_heights = [4.0] * self.num_bars
-        self._idle_phase = 0.0
+        self.bar_heights = [3.5] * self.num_bars
+        self.target_heights = [3.5] * self.num_bars
 
         self.anim_timer = QTimer(self)
         self.anim_timer.timeout.connect(self._animate_step)
@@ -127,22 +126,19 @@ class AudioWaveVisualizer(QWidget):
         pass
 
     def _animate_step(self):
-        self._idle_phase = (self._idle_phase + 0.14) % (2 * math.pi)
-
         for i in range(self.num_bars):
             val = self.band_levels[i]
-            if val > 0.03:
-                # Active vocal frequency response
-                target = max(4.0, min(24.0, 4.0 + val * 20.0))
+            if val > 0.05:
+                # Active vocal frequency response: jumps immediately with speech
+                target = max(3.5, min(24.0, 3.5 + val * 20.5))
             else:
-                # Gentle ambient breathing wave while quiet
-                ambient = math.sin(self._idle_phase + i * 0.7) * 1.8
-                target = max(3.0, 4.0 + ambient)
+                # Still resting baseline when silent (no fake sine oscillation)
+                target = 3.5
 
             self.target_heights[i] = target
             diff = self.target_heights[i] - self.bar_heights[i]
-            # Fast attack (0.5), smooth decay
-            easing = 0.52 if diff > 0 else 0.38
+            # Fast attack (0.65) for instant reaction to words, smooth decay (0.32)
+            easing = 0.65 if diff > 0 else 0.32
             self.bar_heights[i] += diff * easing
 
         self.update()
@@ -161,12 +157,12 @@ class AudioWaveVisualizer(QWidget):
             y = center_y - (h / 2.0)
 
             val = self.band_levels[i]
-            if val > 0.05:
-                # Active speaking (Google Material soft blue #8ab4f8)
+            if val > 0.06 or h > 6.0:
+                # Active speaking (Vibrant Google Material soft blue #8ab4f8)
                 color = QColor(138, 180, 248)
             else:
-                # Ambient quiet gray
-                color = QColor(110, 115, 122)
+                # Silent resting color (deep muted gray)
+                color = QColor(70, 74, 80)
 
             painter.setBrush(QBrush(color))
             painter.setPen(Qt.PenStyle.NoPen)

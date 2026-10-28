@@ -1,28 +1,35 @@
 @echo off
 setlocal
 cd /d "%~dp0"
+title Windows STT - Launcher
 
-title Windows STT Subsystem
-echo ========================================================
-echo  Windows STT Subsystem (Faster-Whisper CUDA)
-echo ========================================================
+echo ==============================================================
+echo   Windows STT Subsystem — Starting
+echo ==============================================================
 
 if not exist ".venv\Scripts\python.exe" (
-    echo [ERROR] Virtual environment not found. Please install dependencies first.
+    echo [ERROR] Virtual environment not found at .venv\Scripts\python.exe.
     pause
     exit /b 1
 )
 
-:: Launch via python.exe so console logs are visible if launched directly,
-:: or pass --settings to open the Control Hub immediately.
-if "%1"=="--settings" (
-    start "" ".venv\Scripts\python.exe" -m app.main --settings
-) else if "%1"=="--silent" (
-    start "" ".venv\Scripts\pythonw.exe" -m app.main
-) else (
-    echo Starting subsystem in background... (Access via System Tray or Hotkeys)
-    start "" ".venv\Scripts\pythonw.exe" -m app.main
-)
+:: Launch the background subsystem via pythonw.exe
+start "" ".venv\Scripts\pythonw.exe" -m app.main %*
 
+:: Wait briefly for startup
+timeout /t 2 /nobreak >nul
+
+echo.
+echo ==============================================================
+echo   [SUCCESS] Windows STT Subsystem is RUNNING in background!
+echo ==============================================================
+echo    - Acceleration: NVIDIA RTX 4060 GPU (CUDA Float16)
+echo    - Push-to-Talk: Hold [Ctrl + Space], speak, release to paste
+echo    - Hands-Free:   Press [Ctrl + Shift + Space] to toggle
+echo    - System Tray:  Cyan microphone icon is active near your clock
+echo    - To Stop:      Double-click stop.bat anytime
+echo ==============================================================
+echo.
+echo Press any key to close this window . . .
+pause >nul
 exit /b 0
-

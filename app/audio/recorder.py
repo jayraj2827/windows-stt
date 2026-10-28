@@ -1,7 +1,7 @@
 """
 High-performance audio recorder using SoundDevice.
 Captures 16kHz mono float32 audio for Faster-Whisper.
-Features ultra-low latency (32ms, blocksize 512), 6-band FFT spectral decomposition,
+Features ultra-low latency (32ms, blocksize 512), responsive 6-band FFT spectral decomposition,
 and live streaming buffer snapshots for real-time progressive transcription.
 """
 import threading
@@ -29,11 +29,11 @@ class AudioRecorder:
 
         # 6 spectral bands: (low_freq, high_freq)
         bands_def = [
-            (100, 350),    # Band 0: Deep vocal fundamentals
+            (100, 350),    # Band 0: Deep vocal fundamentals / pitch
             (350, 750),    # Band 1: Lower mid / vowel body
-            (750, 1500),   # Band 2: Mid vocal resonance
+            (750, 1500),   # Band 2: Mid vocal resonance / formants
             (1500, 2800),  # Band 3: Upper mid / articulation
-            (2800, 5000),  # Band 4: Consonants / sibilance ('s', 't')
+            (2800, 5000),  # Band 4: Consonants / sibilance ('s', 't', 'ch')
             (5000, 7800),  # Band 5: Treble crispness / breath
         ]
         self._band_slices = []
@@ -44,10 +44,11 @@ class AudioRecorder:
             else:
                 self._band_slices.append((0, 1))
 
-        # Dynamic auto-gain state per band
-        self._band_peaks = [0.15] * len(self._band_slices)
-        self._noise_floor = 0.0012
-        self._peak_rms = 0.015
+        # Dynamic auto-gain state per band (responsive to real mic volume)
+        self._band_floors = [0.0001] * len(self._band_slices)
+        self._band_peaks = [0.002] * len(self._band_slices)
+        self._peak_rms = 0.003
+        self._floor_rms = 0.00015
 
     @staticmethod
     def get_input_devices() -> List[Tuple[int, str, bool]]:
@@ -73,7 +74,7 @@ class AudioRecorder:
         self.on_bands_callback = callback
 
     def _audio_callback(self, indata, frames, time_info, status):
-        """Ultra-low latency audio processing callback."""
+        """Ultra-low latency audio processing callback (32ms)."""
         if not self.is_recording:
             return
 
@@ -81,15 +82,18 @@ class AudioRecorder:
         with self._lock:
             self.audio_chunks.append(chunk)
 
-        # 1. Overall RMS calculation with dynamic peak tracking
+        # 1. Overall RMS calculation
         rms = float(np.sqrt(np.mean(chunk**2)))
-        if rms > self._peak_rms:
-            self._peak_rms = min(0.35, self._peak_rms * 0.6 + rms * 0.4)
-        else:
-            self._peak_rms = max(0.008, self._peak_rms * 0.97)
+        if rms < self._floor_rms * 1.5:
+            self._floor_rms = self._floor_rms * 0.9 + rms * 0.1
+        clean_rms = max(0.0, rms - self._floor_rms)
 
-        val = max(0.0, rms - self._noise_floor) / max(0.005, self._peak_rms - self._noise_floor)
-        norm_level = min(1.0, val) ** 0.65
+        if clean_rms > self._peak_rms:
+            self._peak_rms = min(0.1, self._peak_rms * 0.5 + clean_rms * 0.5)
+        else:
+            self._peak_rms = max(0.001, self._peak_rms * 0.97)
+
+        norm_level = min(1.0, (clean_rms / self._peak_rms) ** 0.55)
 
         if self.on_level_callback:
             try:
@@ -97,7 +101,7 @@ class AudioRecorder:
             except Exception:
                 pass
 
-        # 2. Fast 6-Band FFT Spectral Decomposition for syllable sync
+        # 2. Fast 6-Band FFT Spectral Decomposition (Real Voice Sync)
         if self.on_bands_callback:
             try:
                 windowed = chunk * self._hanning
@@ -107,14 +111,20 @@ class AudioRecorder:
                 for i, (start_idx, end_idx) in enumerate(self._band_slices):
                     energy = float(np.mean(fft_vals[start_idx:end_idx]))
 
-                    # Update per-band dynamic peak
-                    if energy > self._band_peaks[i]:
-                        self._band_peaks[i] = min(50.0, self._band_peaks[i] * 0.65 + energy * 0.35)
-                    else:
-                        self._band_peaks[i] = max(0.05, self._band_peaks[i] * 0.96)
+                    # Dynamically track noise floor for this band
+                    if energy < self._band_floors[i] * 1.6:
+                        self._band_floors[i] = self._band_floors[i] * 0.92 + energy * 0.08
 
-                    # Dynamic normalized level (0.0 to 1.0)
-                    norm_energy = min(1.0, (energy / max(0.02, self._band_peaks[i])) ** 0.65)
+                    sig = max(0.0, energy - self._band_floors[i])
+
+                    # Dynamically track peak voice energy for this band
+                    if sig > self._band_peaks[i]:
+                        self._band_peaks[i] = min(0.1, self._band_peaks[i] * 0.5 + sig * 0.5)
+                    else:
+                        self._band_peaks[i] = max(0.0008, self._band_peaks[i] * 0.96)
+
+                    # Dynamic normalized level (0.0 = total silence, 1.0 = peak spoken syllable)
+                    norm_energy = min(1.0, (sig / self._band_peaks[i]) ** 0.55)
                     band_levels.append(norm_energy)
 
                 self.on_bands_callback(band_levels)
