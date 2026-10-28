@@ -1,6 +1,8 @@
 """
 High-performance audio recorder using SoundDevice.
 Captures 16kHz mono float32 audio for Faster-Whisper.
+Features ultra-low latency (32ms, blocksize 512), 6-band FFT spectral decomposition,
+and live streaming buffer snapshots for real-time progressive transcription.
 """
 import threading
 from typing import Callable, List, Optional, Tuple
@@ -9,23 +11,47 @@ import sounddevice as sd
 
 
 class AudioRecorder:
-    def __init__(self, sample_rate: int = 16000):
+    def __init__(self, sample_rate: int = 16000, blocksize: int = 512):
         self.sample_rate = sample_rate
+        self.blocksize = blocksize
         self.stream: Optional[sd.InputStream] = None
         self.is_recording = False
         self.audio_chunks: List[np.ndarray] = []
         self._lock = threading.Lock()
+
+        # Callbacks
         self.on_level_callback: Optional[Callable[[float], None]] = None
-        # Dynamic auto-gain state
-        self._peak_level = 0.015
+        self.on_bands_callback: Optional[Callable[[List[float]], None]] = None
+
+        # Precompute Hanning window and FFT frequency bins
+        self._hanning = np.hanning(self.blocksize).astype(np.float32)
+        freqs = np.fft.rfftfreq(self.blocksize, 1.0 / self.sample_rate)
+
+        # 6 spectral bands: (low_freq, high_freq)
+        bands_def = [
+            (100, 350),    # Band 0: Deep vocal fundamentals
+            (350, 750),    # Band 1: Lower mid / vowel body
+            (750, 1500),   # Band 2: Mid vocal resonance
+            (1500, 2800),  # Band 3: Upper mid / articulation
+            (2800, 5000),  # Band 4: Consonants / sibilance ('s', 't')
+            (5000, 7800),  # Band 5: Treble crispness / breath
+        ]
+        self._band_slices = []
+        for low, high in bands_def:
+            idx = np.where((freqs >= low) & (freqs < high))[0]
+            if len(idx) > 0:
+                self._band_slices.append((idx[0], idx[-1] + 1))
+            else:
+                self._band_slices.append((0, 1))
+
+        # Dynamic auto-gain state per band
+        self._band_peaks = [0.15] * len(self._band_slices)
         self._noise_floor = 0.0012
+        self._peak_rms = 0.015
 
     @staticmethod
     def get_input_devices() -> List[Tuple[int, str, bool]]:
-        """
-        Enumerate all input audio devices.
-        Returns list of (device_index, device_name, is_default).
-        """
+        """Enumerate all input audio devices."""
         devices = []
         try:
             device_list = sd.query_devices()
@@ -39,14 +65,15 @@ class AudioRecorder:
         return devices
 
     def set_level_callback(self, callback: Callable[[float], None]) -> None:
-        """Register a callback for real-time RMS audio levels (0.0 to 1.0)."""
+        """Register a callback for overall RMS audio level (0.0 to 1.0)."""
         self.on_level_callback = callback
 
-    def _audio_callback(self, indata, frames, time_info, status):
-        """Internal callback invoked by sounddevice for each chunk."""
-        if status:
-            print(f"[AudioRecorder] Stream status: {status}", flush=True)
+    def set_bands_callback(self, callback: Callable[[List[float]], None]) -> None:
+        """Register a callback for 6-band FFT normalized frequency spectrum."""
+        self.on_bands_callback = callback
 
+    def _audio_callback(self, indata, frames, time_info, status):
+        """Ultra-low latency audio processing callback."""
         if not self.is_recording:
             return
 
@@ -54,25 +81,58 @@ class AudioRecorder:
         with self._lock:
             self.audio_chunks.append(chunk)
 
-        # Calculate RMS amplitude with dynamic auto-gain normalization
+        # 1. Overall RMS calculation with dynamic peak tracking
+        rms = float(np.sqrt(np.mean(chunk**2)))
+        if rms > self._peak_rms:
+            self._peak_rms = min(0.35, self._peak_rms * 0.6 + rms * 0.4)
+        else:
+            self._peak_rms = max(0.008, self._peak_rms * 0.97)
+
+        val = max(0.0, rms - self._noise_floor) / max(0.005, self._peak_rms - self._noise_floor)
+        norm_level = min(1.0, val) ** 0.65
+
         if self.on_level_callback:
             try:
-                rms = float(np.sqrt(np.mean(chunk**2)))
-                # Update rolling dynamic peak & floor
-                if rms > self._peak_level:
-                    self._peak_level = min(0.35, self._peak_level * 0.6 + rms * 0.4)
-                else:
-                    self._peak_level = max(0.008, self._peak_level * 0.97)
-
-                # Normalized level between 0.0 and 1.0 with perceptual power curve
-                val = max(0.0, rms - self._noise_floor) / max(0.005, self._peak_level - self._noise_floor)
-                level = min(1.0, val) ** 0.65
-                self.on_level_callback(level)
+                self.on_level_callback(norm_level)
             except Exception:
                 pass
 
+        # 2. Fast 6-Band FFT Spectral Decomposition for syllable sync
+        if self.on_bands_callback:
+            try:
+                windowed = chunk * self._hanning
+                fft_vals = np.abs(np.fft.rfft(windowed))
+
+                band_levels = []
+                for i, (start_idx, end_idx) in enumerate(self._band_slices):
+                    energy = float(np.mean(fft_vals[start_idx:end_idx]))
+
+                    # Update per-band dynamic peak
+                    if energy > self._band_peaks[i]:
+                        self._band_peaks[i] = min(50.0, self._band_peaks[i] * 0.65 + energy * 0.35)
+                    else:
+                        self._band_peaks[i] = max(0.05, self._band_peaks[i] * 0.96)
+
+                    # Dynamic normalized level (0.0 to 1.0)
+                    norm_energy = min(1.0, (energy / max(0.02, self._band_peaks[i])) ** 0.65)
+                    band_levels.append(norm_energy)
+
+                self.on_bands_callback(band_levels)
+            except Exception:
+                pass
+
+    def get_current_audio_copy(self) -> Optional[np.ndarray]:
+        """
+        Thread-safe snapshot of currently recorded audio so far.
+        Enables progressive real-time streaming speech-to-text without interrupting recording.
+        """
+        with self._lock:
+            if not self.is_recording or not self.audio_chunks:
+                return None
+            return np.concatenate(self.audio_chunks, axis=0)
+
     def start(self, device_index: Optional[int] = None) -> bool:
-        """Start audio recording stream."""
+        """Start low-latency audio recording stream."""
         with self._lock:
             if self.is_recording:
                 return True
@@ -85,7 +145,7 @@ class AudioRecorder:
                 channels=1,
                 dtype="float32",
                 device=device_index,
-                blocksize=1024,
+                blocksize=self.blocksize,
                 callback=self._audio_callback,
             )
             self.stream.start()
@@ -96,10 +156,7 @@ class AudioRecorder:
             return False
 
     def stop(self) -> Optional[np.ndarray]:
-        """
-        Stop recording and return the accumulated audio as a float32 numpy array.
-        Returns None if no audio or failed.
-        """
+        """Stop recording and return the accumulated audio as a float32 array."""
         with self._lock:
             if not self.is_recording:
                 return None
@@ -120,13 +177,13 @@ class AudioRecorder:
             audio_data = np.concatenate(self.audio_chunks, axis=0)
             self.audio_chunks = []
 
-        # Reset level indicator
+        # Reset visualizers
         if self.on_level_callback:
             self.on_level_callback(0.0)
+        if self.on_bands_callback:
+            self.on_bands_callback([0.0] * len(self._band_slices))
 
-        # Check if audio has sufficient length (at least ~0.2 seconds)
         if len(audio_data) < int(self.sample_rate * 0.2):
             return None
 
         return audio_data
-

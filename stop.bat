@@ -36,3 +36,4 @@ echo.
 echo [OK] Windows STT Subsystem is stopped.
 timeout /t 2 >nul
 exit /b 0
+

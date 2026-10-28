@@ -12,6 +12,7 @@ __pycache__/
 # Cache & logs
 .cache/
 *.log
+.stt.pid
 
 # IDE & OS
 .vscode/

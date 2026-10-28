@@ -135,3 +135,24 @@ class WhisperEngine:
             print(f"[WhisperEngine] Transcription error: {e}")
             return {"text": "", "error": str(e), "latency": time.time() - start_time}
 
+    def transcribe_streaming(self, audio: np.ndarray) -> str:
+        """
+        Progressive real-time streaming transcription pass.
+        Optimized for minimal latency (beam_size=1, without timestamps).
+        """
+        if not self.is_ready or self.model is None or len(audio) < 4000:
+            return ""
+
+        try:
+            segments, _ = self.model.transcribe(
+                audio,
+                language=self.language,
+                beam_size=1,
+                vad_filter=False,
+                without_timestamps=True,
+            )
+            text_parts = [seg.text for seg in segments]
+            return " ".join(text_parts).strip()
+        except Exception:
+            return ""
+

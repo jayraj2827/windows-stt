@@ -89,8 +89,11 @@ class AppCoordinator(QObject):
         self.settings_window = SettingsWindow(self.config)
         self.tray = TrayManager(current_model=self.config.get("model_name", "small.en"))
 
-        # Connect audio level to overlay waveform
+        # Connect audio level and FFT spectral bands to overlay waveform
+        self.recorder.set_bands_callback(lambda bands: self.overlay.sig_audio_bands.emit(bands))
         self.recorder.set_level_callback(lambda lvl: self.overlay.sig_audio_level.emit(lvl))
+        self._streaming_active = False
+        self._last_streaming_text = ""
 
         # 3. Hotkey Listener
         self.hotkeys = HotkeyListener(
@@ -153,10 +156,29 @@ class AppCoordinator(QObject):
     def _handle_start_recording(self, mode: str):
         dev_idx = self.config.get("input_device_index")
         started = self.recorder.start(device_index=dev_idx)
-        if started and self.config.get("overlay_enabled", True):
-            self.overlay.sig_recording_started.emit(mode)
+        if started:
+            self._streaming_active = True
+            self._last_streaming_text = ""
+            if self.config.get("overlay_enabled", True):
+                self.overlay.sig_recording_started.emit(mode)
+            # Launch progressive streaming transcription loop
+            threading.Thread(target=self._streaming_loop, daemon=True).start()
+
+    def _streaming_loop(self):
+        """Periodically transcribe accumulated audio buffer in real time for live preview."""
+        import time
+        time.sleep(0.35)
+        while self._streaming_active:
+            snapshot = self.recorder.get_current_audio_copy()
+            if snapshot is not None and len(snapshot) >= 6400:  # At least 0.4s
+                partial = self.whisper_engine.transcribe_streaming(snapshot)
+                if partial and self._streaming_active:
+                    self._last_streaming_text = partial
+                    self.overlay.sig_streaming_partial.emit(partial)
+            time.sleep(0.45)
 
     def _handle_stop_recording(self, mode: str):
+        self._streaming_active = False
         audio_data = self.recorder.stop()
         if audio_data is None:
             self.overlay.sig_transcription_done.emit("", 0.0)
@@ -175,6 +197,10 @@ class AppCoordinator(QObject):
         result = self.whisper_engine.transcribe(audio_data)
         text = result.get("text", "")
         latency = result.get("latency", 0.0)
+
+        # Fallback to last live streamed text if beam_size=5 filter trimmed it
+        if not text and self._last_streaming_text:
+            text = self._last_streaming_text
 
         if text:
             self.injector.inject(text)
