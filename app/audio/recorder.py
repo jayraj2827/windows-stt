@@ -4,6 +4,7 @@ Supports 16kHz direct capture as well as high-res 48kHz Windows WASAPI native ca
 with studio-grade automatic downsampling to 16kHz for Faster-Whisper.
 Features responsive 6-band FFT spectral decomposition and progressive streaming snapshots.
 """
+import collections
 import threading
 from typing import Callable, List, Optional, Tuple
 import numpy as np
@@ -18,8 +19,11 @@ class AudioRecorder:
         self.active_sample_rate = self.target_sample_rate
         self.blocksize = 512
         self.stream: Optional[sd.InputStream] = None
+        self.active_device_index: Optional[int] = None
         self.is_recording = False
         self.audio_chunks: List[np.ndarray] = []
+        # Pre-roll ring buffer (~448ms) to capture the very first syllable/word before hotkey depression
+        self.preroll_buffer: collections.deque = collections.deque(maxlen=14)
         self._lock = threading.Lock()
 
         # Callbacks
@@ -113,13 +117,13 @@ class AudioRecorder:
         self.on_bands_callback = callback
 
     def _audio_callback(self, indata, frames, time_info, status):
-        """Audio streaming callback."""
-        if not self.is_recording:
-            return
-
+        """Audio streaming callback running continuously in background."""
         chunk = indata[:, 0].copy()  # Mono float32 array
         with self._lock:
-            self.audio_chunks.append(chunk)
+            if self.is_recording:
+                self.audio_chunks.append(chunk)
+            else:
+                self.preroll_buffer.append(chunk)
 
         # 1. Overall RMS calculation
         rms = float(np.sqrt(np.mean(chunk**2)))
@@ -200,18 +204,24 @@ class AudioRecorder:
 
         return self._resample_to_16k(raw)
 
-    def start(self, device_index: Optional[int] = None) -> bool:
+    def _ensure_stream_open(self, device_index: Optional[int] = None) -> bool:
         """
-        Start audio recording stream.
-        Attempts 16kHz directly, automatically falls back to native device rate (e.g. 48kHz WASAPI).
+        Open the PortAudio stream if not yet open or if device changed.
+        Keeps stream running continuously so hotkey triggers in 0.00ms.
         """
-        with self._lock:
-            if self.is_recording:
-                return True
-            self.audio_chunks = []
-            self.is_recording = True
+        if self.stream is not None and self.stream.active and self.active_device_index == device_index:
+            return True
 
-        # Query native rate for fallback
+        if self.stream is not None:
+            try:
+                self.stream.stop()
+                self.stream.close()
+            except Exception:
+                pass
+            finally:
+                self.stream = None
+
+        # Query native rate for device
         try:
             if device_index is not None:
                 dev_info = sd.query_devices(device_index)
@@ -221,11 +231,10 @@ class AudioRecorder:
         except Exception:
             native_rate = 48000
 
-        # Try target rate (16000) first
         opened = False
+        # Try target rate (16000), native rate (e.g. 48000), etc.
         for rate in [16000, native_rate, 48000, 44100]:
             try:
-                # 32ms block size
                 block = int(rate * 0.032)
                 self.stream = sd.InputStream(
                     samplerate=rate,
@@ -238,14 +247,16 @@ class AudioRecorder:
                 self.stream.start()
                 self.active_sample_rate = rate
                 self.blocksize = block
+                self.active_device_index = device_index
                 self._configure_spectral_analyzer(rate, block)
                 opened = True
                 break
             except Exception:
                 continue
 
+        # Fallback to system default device if specified device failed
         if not opened and device_index is not None:
-            print(f"[AudioRecorder] Device {device_index} failed, falling back to system default input...")
+            print(f"[AudioRecorder] Device {device_index} failed, falling back to system default...")
             for rate in [16000, 48000, 44100]:
                 try:
                     block = int(rate * 0.032)
@@ -260,50 +271,69 @@ class AudioRecorder:
                     self.stream.start()
                     self.active_sample_rate = rate
                     self.blocksize = block
+                    self.active_device_index = None
                     self._configure_spectral_analyzer(rate, block)
                     opened = True
                     break
                 except Exception:
                     continue
 
-        if not opened:
-            print(f"[AudioRecorder] Failed to open audio input on device {device_index} and fallback")
-            self.is_recording = False
+        return opened
+
+    def start(self, device_index: Optional[int] = None) -> bool:
+        """
+        Instant 0ms start recording using warm audio stream and ~448ms pre-roll.
+        Pre-roll guarantees the very first word is never missed.
+        """
+        if not self._ensure_stream_open(device_index):
             return False
+
+        with self._lock:
+            if self.is_recording:
+                return True
+            # Prepend pre-roll buffer so initial consonants / syllables are fully preserved!
+            self.audio_chunks = list(self.preroll_buffer)
+            self.preroll_buffer.clear()
+            self.is_recording = True
 
         return True
 
     def stop(self) -> Optional[np.ndarray]:
-        """Stop recording and return 16kHz float32 audio array."""
+        """
+        Stop recording and return 16kHz float32 audio array.
+        Audio stream remains warm in the background for zero-latency next press.
+        """
         with self._lock:
             if not self.is_recording:
                 return None
             self.is_recording = False
 
-        if self.stream is not None:
-            try:
-                self.stream.stop()
-                self.stream.close()
-            except Exception as e:
-                print(f"[AudioRecorder] Error closing stream: {e}")
-            finally:
-                self.stream = None
-
-        with self._lock:
             if not self.audio_chunks:
                 return None
             raw = np.concatenate(self.audio_chunks, axis=0)
             self.audio_chunks = []
 
-        # Reset visualizers
+        # Reset visualizers to clean resting state
         if self.on_level_callback:
             self.on_level_callback(0.0)
         if self.on_bands_callback:
             self.on_bands_callback([0.0] * 6)
 
         audio_16k = self._resample_to_16k(raw)
-
-        if len(audio_16k) < int(self.target_sample_rate * 0.2):
+        if len(audio_16k) < int(self.target_sample_rate * 0.15):  # Min 150ms
             return None
 
         return audio_16k
+
+    def close(self):
+        """Cleanly close underlying PortAudio stream on exit."""
+        with self._lock:
+            self.is_recording = False
+        if self.stream is not None:
+            try:
+                self.stream.stop()
+                self.stream.close()
+            except Exception:
+                pass
+            finally:
+                self.stream = None

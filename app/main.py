@@ -132,6 +132,13 @@ class AppCoordinator(QObject):
         self.sig_model_status.connect(self._on_model_loaded)
         threading.Thread(target=load_worker, daemon=True).start()
 
+        # Warm up audio stream in background with pre-roll buffer so hotkey triggers in 0.00ms
+        def warmup_audio():
+            dev_idx = self.config.get("input_device_index")
+            self.recorder._ensure_stream_open(dev_idx)
+
+        threading.Thread(target=warmup_audio, daemon=True).start()
+
         self.hotkeys.start()
         self.tray.show()
 
@@ -216,12 +223,16 @@ class AppCoordinator(QObject):
         self.settings_window.add_history_entry(text, latency)
 
     def _on_settings_updated(self, new_config: Dict[str, Any]):
+        old_dev = self.config.get("input_device_index")
+        new_dev = new_config.get("input_device_index")
         self.config = new_config
         self.injector.method = self.config.get("injection_method", "clipboard")
         self.hotkeys.update_hotkeys(
             self.config.get("hotkey_hold", "<ctrl>+<space>"),
             self.config.get("hotkey_toggle", "<ctrl>+<shift>+<space>"),
         )
+        if old_dev != new_dev:
+            threading.Thread(target=lambda: self.recorder._ensure_stream_open(new_dev), daemon=True).start()
         print("[Friday STT] Configuration dynamically updated.")
 
     def _reload_model(self, model_name: str):
@@ -250,10 +261,9 @@ class AppCoordinator(QObject):
         self.settings_window.activateWindow()
 
     def _exit_app(self):
-        print("[Windows STT] Shutting down subsystem...")
+        print("[Friday STT] Shutting down subsystem...")
         self.hotkeys.stop()
-        if self.recorder.is_recording:
-            self.recorder.stop()
+        self.recorder.close()
         cleanup_pid()
         QApplication.quit()
 

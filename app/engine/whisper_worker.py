@@ -3,6 +3,7 @@ Faster-Whisper background worker with automatic CUDA detection and fallback.
 """
 import os
 import sys
+import threading
 import time
 from typing import Any, Dict, Optional, Tuple
 import numpy as np
@@ -49,6 +50,7 @@ class WhisperEngine:
         self.vad_filter = vad_filter
         self.model = None
         self.is_ready = False
+        self._lock = threading.Lock()
 
     def load_model(self) -> Tuple[bool, str]:
         """
@@ -102,48 +104,48 @@ class WhisperEngine:
         Transcribe float32 16kHz audio array.
         Returns dict: {"text": str, "latency": float, "device": str, "language": str}
         """
-        if not self.is_ready or self.model is None:
-            return {"text": "", "error": "Model not loaded", "latency": 0.0}
+        if not self.is_ready or self.model is None or len(audio) < 1600:
+            return {"text": "", "error": "No audio" if len(audio) < 1600 else "Model not loaded", "latency": 0.0}
 
         start_time = time.time()
-        try:
-            segments, info = self.model.transcribe(
-                audio,
-                language=self.language,
-                beam_size=5,
-                initial_prompt="Hello, this is clear English speech with precise punctuation, capitalization, numbers, and technical terminology.",
-                condition_on_previous_text=False,
-                temperature=[0.0, 0.2, 0.4],
-                vad_filter=self.vad_filter,
-                vad_parameters=dict(
-                    min_silence_duration_ms=400,
-                    speech_pad_ms=200,
-                ),
-            )
+        with self._lock:
+            try:
+                segments, info = self.model.transcribe(
+                    audio,
+                    language=self.language,
+                    beam_size=5,
+                    temperature=0.0,
+                    vad_filter=False,  # Keep off for dictation to preserve initial consonants
+                )
 
-            text_parts = []
-            for seg in segments:
-                text_parts.append(seg.text)
+                text_parts = []
+                for seg in segments:
+                    text_parts.append(seg.text)
 
-            full_text = " ".join(text_parts).strip()
-            latency = time.time() - start_time
+                full_text = " ".join(text_parts).strip()
+                latency = time.time() - start_time
 
-            return {
-                "text": full_text,
-                "latency": round(latency, 3),
-                "device": self.active_device,
-                "language": info.language if info else self.language,
-            }
-        except Exception as e:
-            print(f"[WhisperEngine] Transcription error: {e}")
-            return {"text": "", "error": str(e), "latency": time.time() - start_time}
+                return {
+                    "text": full_text,
+                    "latency": round(latency, 3),
+                    "device": self.active_device,
+                    "language": info.language if info else self.language,
+                }
+            except Exception as e:
+                print(f"[WhisperEngine] Transcription error: {e}")
+                return {"text": "", "error": str(e), "latency": time.time() - start_time}
 
     def transcribe_streaming(self, audio: np.ndarray) -> str:
         """
         Progressive real-time streaming transcription pass.
-        Optimized for minimal latency (beam_size=1, without timestamps).
+        Optimized for minimal latency (beam_size=1, greedy temperature=0.0).
         """
         if not self.is_ready or self.model is None or len(audio) < 4000:
+            return ""
+
+        # Acquire lock without blocking so streaming never delays the final transcription pass
+        acquired = self._lock.acquire(blocking=False)
+        if not acquired:
             return ""
 
         try:
@@ -151,6 +153,7 @@ class WhisperEngine:
                 audio,
                 language=self.language,
                 beam_size=1,
+                temperature=0.0,
                 vad_filter=False,
                 without_timestamps=True,
             )
@@ -158,4 +161,6 @@ class WhisperEngine:
             return " ".join(text_parts).strip()
         except Exception:
             return ""
+        finally:
+            self._lock.release()
 
