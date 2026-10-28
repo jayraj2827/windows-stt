@@ -29,12 +29,14 @@ MUTEX_NAME = "Global\\FridaySTT_VoiceSystem_SingleInstance"
 def ensure_single_instance():
     """Ensure only one instance runs at a time via Windows named mutex."""
     if sys.platform != "win32":
-        return None
+        return True
     try:
         kernel32 = ctypes.windll.kernel32
         mutex = kernel32.CreateMutexW(None, True, MUTEX_NAME)
         ERROR_ALREADY_EXISTS = 183
         if kernel32.GetLastError() == ERROR_ALREADY_EXISTS:
+            if mutex:
+                kernel32.CloseHandle(mutex)
             return None
         return mutex
     except Exception as e:
@@ -220,7 +222,7 @@ class AppCoordinator(QObject):
             self.config.get("hotkey_hold", "<ctrl>+<space>"),
             self.config.get("hotkey_toggle", "<ctrl>+<shift>+<space>"),
         )
-        print("[Windows STT] Configuration dynamically updated.")
+        print("[Friday STT] Configuration dynamically updated.")
 
     def _reload_model(self, model_name: str):
         self.config["model_name"] = model_name
@@ -279,7 +281,8 @@ def main():
                 if os.path.exists(PID_FILE):
                     with open(PID_FILE, "r") as f:
                         old_pid = f.read().strip()
-                    subprocess.run(["taskkill", "/F", "/PID", old_pid], capture_output=True)
+                    if old_pid and old_pid != str(os.getpid()):
+                        subprocess.run(["taskkill", "/F", "/PID", old_pid], capture_output=True)
                 subprocess.run(["taskkill", "/F", "/IM", "pythonw.exe"], capture_output=True)
                 time.sleep(0.8)
                 mutex = ensure_single_instance()
@@ -288,7 +291,7 @@ def main():
 
         # If still locked by an instance, offer one-click Restart & Reload
         if mutex is None:
-            app_check = QApplication(sys.argv)
+            app = QApplication.instance() or QApplication(sys.argv)
             box = QMessageBox()
             box.setIcon(QMessageBox.Icon.Question)
             box.setWindowTitle("Friday STT")
@@ -299,6 +302,11 @@ def main():
 
             if box.clickedButton() == restart_btn:
                 try:
+                    if os.path.exists(PID_FILE):
+                        with open(PID_FILE, "r") as f:
+                            old_pid = f.read().strip()
+                        if old_pid and old_pid != str(os.getpid()):
+                            subprocess.run(["taskkill", "/F", "/PID", old_pid], capture_output=True)
                     subprocess.run(["taskkill", "/F", "/IM", "pythonw.exe"], capture_output=True)
                     time.sleep(0.8)
                     mutex = ensure_single_instance()
@@ -310,9 +318,9 @@ def main():
     register_pid()
     atexit.register(cleanup_pid)
 
-    app = QApplication(sys.argv)
+    app = QApplication.instance() or QApplication(sys.argv)
     app.setApplicationName("Friday STT")
-    app.setApplicationDisplayName("Friday STT — Voice Typing System")
+    app.setApplicationDisplayName("Friday STT - Voice Typing System")
     app.setOrganizationName("Friday AI")
     app.setQuitOnLastWindowClosed(False)
 

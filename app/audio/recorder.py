@@ -12,9 +12,10 @@ import sounddevice as sd
 
 
 class AudioRecorder:
-    def __init__(self, target_sample_rate: int = 16000):
-        self.target_sample_rate = target_sample_rate
-        self.active_sample_rate = target_sample_rate
+    def __init__(self, sample_rate: int = 16000, target_sample_rate: Optional[int] = None, **kwargs):
+        self.target_sample_rate = target_sample_rate if target_sample_rate is not None else sample_rate
+        self.sample_rate = self.target_sample_rate
+        self.active_sample_rate = self.target_sample_rate
         self.blocksize = 512
         self.stream: Optional[sd.InputStream] = None
         self.is_recording = False
@@ -90,7 +91,7 @@ class AudioRecorder:
                 is_wasapi = "wasapi" in api_name.lower()
 
                 if is_wasapi:
-                    label = f"[RECOMMENDED] {name} — WASAPI (Highest Accuracy)"
+                    label = f"[RECOMMENDED] {name} - WASAPI (Highest Accuracy)"
                 else:
                     label = f"{name} ({api_name})"
 

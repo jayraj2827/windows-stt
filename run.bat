@@ -20,6 +20,9 @@ if exist ".stt.pid" (
     del .stt.pid >nul 2>&1
 )
 taskkill /F /IM pythonw.exe >nul 2>&1
+taskkill /F /FI "WINDOWTITLE eq Friday STT*" >nul 2>&1
+taskkill /F /FI "WINDOWTITLE eq Windows STT*" >nul 2>&1
+taskkill /F /FI "WINDOWTITLE eq Antigravity STT*" >nul 2>&1
 timeout /t 1 /nobreak >nul
 
 :: Launch the fresh background subsystem via pythonw.exe

@@ -18,14 +18,6 @@ def send_paste_event():
     """Send native Windows Ctrl+V keystrokes via user32.keybd_event."""
     try:
         user32 = ctypes.windll.user32
-        # Ensure no lingering Windows menu bar or system menu is focused
-        try:
-            user32.keybd_event(0x1B, 0, 0, 0)
-            user32.keybd_event(0x1B, 0, KEYEVENTF_KEYUP, 0)
-            time.sleep(0.015)
-        except Exception:
-            pass
-
         # Ctrl down
         user32.keybd_event(VK_CONTROL, 0, 0, 0)
         # V down

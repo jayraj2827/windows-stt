@@ -1,5 +1,5 @@
 """
-Floating Status Pill Overlay for Windows STT Subsystem.
+Floating Status Pill Overlay for Friday STT System.
 Configured with Windows WS_EX_NOACTIVATE so it NEVER steals focus from active applications.
 Features:
 - Real-time 6-band FFT spectral visualizer syncing 1:1 with spoken syllables and words.

@@ -1,5 +1,5 @@
 """
-Settings and Control Hub for Windows STT Subsystem.
+Settings and Control Hub for Friday STT System.
 Google OLED Dark UI aesthetic with comprehensive system controls.
 """
 from datetime import datetime
