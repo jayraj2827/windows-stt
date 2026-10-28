@@ -107,6 +107,11 @@ class WhisperEngine:
         if not self.is_ready or self.model is None or len(audio) < 1600:
             return {"text": "", "error": "No audio" if len(audio) < 1600 else "Model not loaded", "latency": 0.0}
 
+        # Fast silence check to prevent Whisper from hallucinating on dead air
+        peak = float(np.max(np.abs(audio)))
+        if peak < 0.02:
+            return {"text": "", "latency": 0.0, "device": self.active_device, "language": self.language}
+
         start_time = time.time()
         with self._lock:
             try:
@@ -115,12 +120,26 @@ class WhisperEngine:
                     language=self.language,
                     beam_size=5,
                     temperature=0.0,
-                    vad_filter=False,  # Keep off for dictation to preserve initial consonants
+                    vad_filter=True,
+                    vad_parameters=dict(
+                        min_silence_duration_ms=500,
+                        speech_pad_ms=400,
+                        threshold=0.30,
+                    ),
                 )
+
+                HALLUCINATIONS = {"you", "you.", "thank you", "thank you.", "subtitles by", "bye", "bye."}
 
                 text_parts = []
                 for seg in segments:
-                    text_parts.append(seg.text)
+                    clean = seg.text.strip()
+                    # Filter out Whisper silence hallucinations
+                    if clean.lower() in HALLUCINATIONS and seg.no_speech_prob > 0.30:
+                        continue
+                    if seg.no_speech_prob > 0.70:
+                        continue
+                    if clean:
+                        text_parts.append(clean)
 
                 full_text = " ".join(text_parts).strip()
                 latency = time.time() - start_time
@@ -143,6 +162,10 @@ class WhisperEngine:
         if not self.is_ready or self.model is None or len(audio) < 4000:
             return ""
 
+        peak = float(np.max(np.abs(audio)))
+        if peak < 0.02:
+            return ""
+
         # Acquire lock without blocking so streaming never delays the final transcription pass
         acquired = self._lock.acquire(blocking=False)
         if not acquired:
@@ -154,10 +177,24 @@ class WhisperEngine:
                 language=self.language,
                 beam_size=1,
                 temperature=0.0,
-                vad_filter=False,
+                vad_filter=True,
+                vad_parameters=dict(
+                    min_silence_duration_ms=500,
+                    speech_pad_ms=350,
+                    threshold=0.30,
+                ),
                 without_timestamps=True,
             )
-            text_parts = [seg.text for seg in segments]
+
+            HALLUCINATIONS = {"you", "you.", "thank you", "thank you.", "subtitles by"}
+            text_parts = []
+            for seg in segments:
+                clean = seg.text.strip()
+                if clean.lower() in HALLUCINATIONS and seg.no_speech_prob > 0.30:
+                    continue
+                if clean:
+                    text_parts.append(clean)
+
             return " ".join(text_parts).strip()
         except Exception:
             return ""

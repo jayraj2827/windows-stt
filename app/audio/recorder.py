@@ -180,17 +180,30 @@ class AudioRecorder:
                 pass
 
     def _resample_to_16k(self, audio_data: np.ndarray) -> np.ndarray:
-        """Resample audio data to 16000 Hz if recorded at another sample rate."""
-        if self.active_sample_rate == 16000 or len(audio_data) == 0:
+        """Resample audio data to 16000 Hz if recorded at another sample rate, and apply intelligent AGC."""
+        if len(audio_data) == 0:
             return audio_data
 
         if self.active_sample_rate == 48000:
             # Exact 3:1 integer downsampling with studio anti-aliasing
-            return scipy.signal.resample_poly(audio_data, 1, 3).astype(np.float32)
-        else:
+            audio_16k = scipy.signal.resample_poly(audio_data, 1, 3).astype(np.float32)
+        elif self.active_sample_rate != 16000:
             # Arbitrary resampling
             target_len = int(len(audio_data) * 16000 / self.active_sample_rate)
-            return scipy.signal.resample(audio_data, target_len).astype(np.float32)
+            audio_16k = scipy.signal.resample(audio_data, target_len).astype(np.float32)
+        else:
+            audio_16k = audio_data.astype(np.float32)
+
+        # Intelligent Speech Normalization (AGC):
+        # Laptop mic arrays on Windows WASAPI often record at -35dB (peak ~0.008).
+        # Normalizing peak amplitude to 0.70 ensures Whisper's acoustic encoder
+        # receives pristine, nominal audio rather than confusing speech with background noise!
+        peak = float(np.max(np.abs(audio_16k)))
+        if peak > 0.002:
+            scale = min(25.0, 0.70 / peak)
+            audio_16k = audio_16k * scale
+
+        return np.clip(audio_16k, -1.0, 1.0)
 
     def get_current_audio_copy(self) -> Optional[np.ndarray]:
         """

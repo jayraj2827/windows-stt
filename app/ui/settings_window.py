@@ -351,7 +351,7 @@ class SettingsWindow(QWidget):
         """Toggle live microphone volume testing."""
         if self.is_testing_mic:
             if self.test_recorder:
-                self.test_recorder.stop()
+                self.test_recorder.close()
                 self.test_recorder = None
             self.audio_meter.setValue(0)
             self.audio_meter.setFormat("Mic Level: 0%")

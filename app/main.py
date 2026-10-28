@@ -209,7 +209,9 @@ class AppCoordinator(QObject):
 
         # Fallback to last live streamed text if beam_size=5 filter trimmed it
         if not text and self._last_streaming_text:
-            text = self._last_streaming_text
+            candidate = self._last_streaming_text.strip()
+            if candidate.lower() not in {"you", "you.", "thank you", "thank you.", "subtitles by"}:
+                text = candidate
 
         if text:
             self.injector.inject(text)
