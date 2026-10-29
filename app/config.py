@@ -12,6 +12,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "hotkey_hold": "<ctrl>+<space>",
     "hotkey_toggle": "<ctrl>+<shift>+<space>",
     "input_device_index": None,
+    "mic_mode": "on_demand",  # "on_demand" (open only while pressing key) or "always_ready"
     "injection_method": "clipboard",  # "clipboard" or "typing"
     "restore_clipboard": True,
     "overlay_enabled": True,

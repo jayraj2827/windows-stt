@@ -63,6 +63,7 @@ You can edit `config.json` directly or use the Settings UI:
   "hotkey_hold": "<ctrl>+<space>",
   "hotkey_toggle": "<ctrl>+<shift>+<space>",
   "input_device_index": null,
+  "mic_mode": "on_demand",
   "injection_method": "clipboard",
   "restore_clipboard": true,
   "overlay_enabled": true,

@@ -227,6 +227,24 @@ class SettingsWindow(QWidget):
         desc.setStyleSheet("color: #9aa0a6; font-size: 11px;")
         layout.addWidget(desc)
 
+        # Microphone Activation Mode
+        row_mode = QHBoxLayout()
+        lbl_mode = QLabel("Mic Activation:", card)
+        self.combo_mic_mode = QComboBox(card)
+        self.combo_mic_mode.addItem("On-Demand (Privacy Mode — Mic opens only while holding hotkey)", "on_demand")
+        self.combo_mic_mode.addItem("Always-Ready (Instant 0ms — Mic stays warm in background)", "always_ready")
+        row_mode.addWidget(lbl_mode)
+        row_mode.addWidget(self.combo_mic_mode, 1)
+        layout.addLayout(row_mode)
+
+        mode_desc = QLabel(
+            "In On-Demand mode (Recommended), the microphone is completely closed and released when idle, "
+            "turning off the Windows microphone indicator in your taskbar.",
+            card
+        )
+        mode_desc.setStyleSheet("color: #9aa0a6; font-size: 11px;")
+        layout.addWidget(mode_desc)
+
         # Live Audio Level Meter
         meter_layout = QHBoxLayout()
         self.test_btn = QPushButton("Test Microphone", card)
@@ -336,6 +354,12 @@ class SettingsWindow(QWidget):
         if not matched and self.combo_device.count() > 0:
             self.combo_device.setCurrentIndex(0)
 
+        # Mic mode
+        mic_mode = self.config.get("mic_mode", "on_demand")
+        idx_mode = self.combo_mic_mode.findData(mic_mode)
+        if idx_mode >= 0:
+            self.combo_mic_mode.setCurrentIndex(idx_mode)
+
         # Injection checkboxes
         method = self.config.get("injection_method", "clipboard")
         if method == "typing":
@@ -399,6 +423,7 @@ class SettingsWindow(QWidget):
         self.config["hotkey_hold"] = self.edit_hold.text().strip() or "<ctrl>+<space>"
         self.config["hotkey_toggle"] = self.edit_toggle.text().strip() or "<ctrl>+<shift>+<space>"
         self.config["input_device_index"] = self.combo_device.currentData()
+        self.config["mic_mode"] = self.combo_mic_mode.currentData()
         self.config["injection_method"] = "typing" if self.check_typing.isChecked() else "clipboard"
         self.config["overlay_enabled"] = self.check_overlay.isChecked()
 

@@ -13,17 +13,19 @@ import sounddevice as sd
 
 
 class AudioRecorder:
-    def __init__(self, sample_rate: int = 16000, target_sample_rate: Optional[int] = None, **kwargs):
+    def __init__(self, sample_rate: int = 16000, target_sample_rate: Optional[int] = None, mic_mode: str = "on_demand", **kwargs):
         self.target_sample_rate = target_sample_rate if target_sample_rate is not None else sample_rate
         self.sample_rate = self.target_sample_rate
         self.active_sample_rate = self.target_sample_rate
+        self.mic_mode = mic_mode  # "on_demand" (open only while pressing key) or "always_ready"
         self.blocksize = 512
         self.stream: Optional[sd.InputStream] = None
         self.active_device_index: Optional[int] = None
         self.is_recording = False
         self.audio_chunks: List[np.ndarray] = []
-        # Pre-roll ring buffer (~448ms) to capture the very first syllable/word before hotkey depression
+        # Pre-roll ring buffer (~448ms) used in always_ready mode
         self.preroll_buffer: collections.deque = collections.deque(maxlen=14)
+        self._cached_rates = {}
         self._lock = threading.Lock()
 
         # Callbacks
@@ -220,19 +222,13 @@ class AudioRecorder:
     def _ensure_stream_open(self, device_index: Optional[int] = None) -> bool:
         """
         Open the PortAudio stream if not yet open or if device changed.
-        Keeps stream running continuously so hotkey triggers in 0.00ms.
+        Uses cached native sample rate first for sub-50ms instant opening.
         """
         if self.stream is not None and self.stream.active and self.active_device_index == device_index:
             return True
 
         if self.stream is not None:
-            try:
-                self.stream.stop()
-                self.stream.close()
-            except Exception:
-                pass
-            finally:
-                self.stream = None
+            self.close()
 
         # Query native rate for device
         try:
@@ -244,9 +240,15 @@ class AudioRecorder:
         except Exception:
             native_rate = 48000
 
+        # Prioritize cached rate or native hardware rate first (e.g. 48000/44100)
+        cached_rate = self._cached_rates.get(device_index)
+        rates_to_try = [cached_rate] if cached_rate else []
+        for r in [native_rate, 48000, 44100, 16000]:
+            if r not in rates_to_try:
+                rates_to_try.append(r)
+
         opened = False
-        # Try target rate (16000), native rate (e.g. 48000), etc.
-        for rate in [16000, native_rate, 48000, 44100]:
+        for rate in rates_to_try:
             try:
                 block = int(rate * 0.032)
                 self.stream = sd.InputStream(
@@ -261,6 +263,7 @@ class AudioRecorder:
                 self.active_sample_rate = rate
                 self.blocksize = block
                 self.active_device_index = device_index
+                self._cached_rates[device_index] = rate
                 self._configure_spectral_analyzer(rate, block)
                 opened = True
                 break
@@ -270,7 +273,7 @@ class AudioRecorder:
         # Fallback to system default device if specified device failed
         if not opened and device_index is not None:
             print(f"[AudioRecorder] Device {device_index} failed, falling back to system default...")
-            for rate in [16000, 48000, 44100]:
+            for rate in [48000, 44100, 16000]:
                 try:
                     block = int(rate * 0.032)
                     self.stream = sd.InputStream(
@@ -295,26 +298,31 @@ class AudioRecorder:
 
     def start(self, device_index: Optional[int] = None) -> bool:
         """
-        Instant 0ms start recording using warm audio stream and ~448ms pre-roll.
-        Pre-roll guarantees the very first word is never missed.
+        Start audio recording stream on hotkey press.
+        In on_demand mode (default), opens the microphone stream immediately on key press.
         """
-        if not self._ensure_stream_open(device_index):
+        with self._lock:
+            self.audio_chunks = []
+            self.is_recording = True
+
+        opened = self._ensure_stream_open(device_index)
+        if not opened:
+            with self._lock:
+                self.is_recording = False
             return False
 
-        with self._lock:
-            if self.is_recording:
-                return True
-            # Prepend pre-roll buffer so initial consonants / syllables are fully preserved!
-            self.audio_chunks = list(self.preroll_buffer)
-            self.preroll_buffer.clear()
-            self.is_recording = True
+        # In always_ready mode, prepend pre-roll buffer if available
+        if self.mic_mode == "always_ready":
+            with self._lock:
+                self.audio_chunks = list(self.preroll_buffer)
+                self.preroll_buffer.clear()
 
         return True
 
     def stop(self) -> Optional[np.ndarray]:
         """
         Stop recording and return 16kHz float32 audio array.
-        Audio stream remains warm in the background for zero-latency next press.
+        In on_demand mode (default), immediately closes and releases the microphone hardware!
         """
         with self._lock:
             if not self.is_recording:
@@ -322,15 +330,24 @@ class AudioRecorder:
             self.is_recording = False
 
             if not self.audio_chunks:
-                return None
-            raw = np.concatenate(self.audio_chunks, axis=0)
+                raw = np.array([], dtype=np.float32)
+            else:
+                raw = np.concatenate(self.audio_chunks, axis=0)
             self.audio_chunks = []
+
+        # If on_demand mode, immediately close and release microphone stream
+        # so Windows microphone indicator icon disappears and mic is completely released!
+        if self.mic_mode == "on_demand":
+            self.close()
 
         # Reset visualizers to clean resting state
         if self.on_level_callback:
             self.on_level_callback(0.0)
         if self.on_bands_callback:
             self.on_bands_callback([0.0] * 6)
+
+        if len(raw) == 0:
+            return None
 
         audio_16k = self._resample_to_16k(raw)
         if len(audio_16k) < int(self.target_sample_rate * 0.15):  # Min 150ms

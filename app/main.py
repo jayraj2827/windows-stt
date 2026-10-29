@@ -73,7 +73,10 @@ class AppCoordinator(QObject):
         self.config = config
 
         # 1. Initialize Subsystems
-        self.recorder = AudioRecorder(sample_rate=16000)
+        self.recorder = AudioRecorder(
+            sample_rate=16000,
+            mic_mode=self.config.get("mic_mode", "on_demand"),
+        )
         self.injector = TextInjector(
             method=self.config.get("injection_method", "clipboard"),
             restore_clipboard=self.config.get("restore_clipboard", True),
@@ -132,12 +135,13 @@ class AppCoordinator(QObject):
         self.sig_model_status.connect(self._on_model_loaded)
         threading.Thread(target=load_worker, daemon=True).start()
 
-        # Warm up audio stream in background with pre-roll buffer so hotkey triggers in 0.00ms
-        def warmup_audio():
-            dev_idx = self.config.get("input_device_index")
-            self.recorder._ensure_stream_open(dev_idx)
+        # Only warm up audio stream if explicitly configured for always_ready mode
+        if self.config.get("mic_mode", "on_demand") == "always_ready":
+            def warmup_audio():
+                dev_idx = self.config.get("input_device_index")
+                self.recorder._ensure_stream_open(dev_idx)
 
-        threading.Thread(target=warmup_audio, daemon=True).start()
+            threading.Thread(target=warmup_audio, daemon=True).start()
 
         self.hotkeys.start()
         self.tray.show()
@@ -233,7 +237,10 @@ class AppCoordinator(QObject):
             self.config.get("hotkey_hold", "<ctrl>+<space>"),
             self.config.get("hotkey_toggle", "<ctrl>+<shift>+<space>"),
         )
-        if old_dev != new_dev:
+        self.recorder.mic_mode = self.config.get("mic_mode", "on_demand")
+        if self.recorder.mic_mode == "on_demand":
+            self.recorder.close()
+        elif old_dev != new_dev:
             threading.Thread(target=lambda: self.recorder._ensure_stream_open(new_dev), daemon=True).start()
         print("[Friday STT] Configuration dynamically updated.")
 
