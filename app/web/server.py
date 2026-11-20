@@ -93,8 +93,11 @@ def parse_multipart_form_data(
 
 class WebStudioHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
-        # Keep console output clean
-        sys.stderr.write(f"[WebStudio] {args[0]} {args[1]} {args[2]}\n")
+        # Keep console output clean and safe
+        try:
+            sys.stderr.write(f"[WebStudio] {format % args}\n")
+        except Exception:
+            sys.stderr.write(f"[WebStudio] {' '.join(str(a) for a in args)}\n")
 
     def _send_json(self, status_code: int, data: Dict[str, Any]):
         response_bytes = json.dumps(data).encode("utf-8")
@@ -146,6 +149,11 @@ class WebStudioHandler(BaseHTTPRequestHandler):
                 ],
                 "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
             })
+            return
+
+        if path == "/favicon.ico":
+            self.send_response(204)
+            self.end_headers()
             return
 
         # Serve other static files if any
