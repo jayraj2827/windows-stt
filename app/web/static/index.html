@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Friday Web Studio — Offline Audio Transcription & Translation</title>
+  <style>
+    :root {
+      --bg-dark: #080808;
+      --card-bg: #121212;
+      --card-border: #222222;
+      --accent-blue: #8ab4f8;
+      --accent-blue-hover: #aecbfa;
+      --accent-green: #81c995;
+      --accent-purple: #c58af9;
+      --accent-orange: #fbbc04;
+      --text-main: #f1f3f4;
+      --text-muted: #9aa0a6;
+      --text-dim: #5f6368;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Google Sans", Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 960px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #1a73e8, #8ab4f8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
+    }
+
+    .brand h1 {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: -0.2px;
+    }
+
+    .brand p {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .gpu-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #0d1e13;
+      border: 1px solid #1e4620;
+      color: var(--accent-green);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 20px;
+    }
+
+    .gpu-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--accent-green);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent-green);
+    }
+
+    /* Main Grid */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* Mode Tabs */
+    .mode-tabs {
+      display: flex;
+      background: #000000;
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-md);
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .mode-tab {
+      flex: 1;
+      padding: 10px 16px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .mode-tab.active {
+      background: #1e1e1e;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Drop Zone */
+    .dropzone {
+      border: 2px dashed #2a2a2a;
+      border-radius: var(--radius-md);
+      padding: 36px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: #0e0e0e;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--accent-blue);
+      background: rgba(138, 180, 248, 0.04);
+    }
+
+    .dropzone-icon {
+      font-size: 38px;
+      color: var(--accent-blue);
+    }
+
+    .dropzone-title {
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .dropzone-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    /* File Selected Card */
+    .selected-file-card {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      background: #181818;
+      border: 1px solid #2d2d2d;
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+    }
+
+    .file-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    .file-meta-icon {
+      font-size: 24px;
+    }
+
+    .file-meta-text {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .file-name {
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 400px;
+    }
+
+    .file-size {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .remove-file-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .remove-file-btn:hover {
+      color: #f28b82;
+    }
+
+    /* Settings Controls */
+    .settings-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .setting-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .setting-group label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    select {
+      background: #181818;
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    select:focus {
+      border-color: var(--accent-blue);
+    }
+
+    /* Action Button */
+    .action-btn {
+      background: linear-gradient(135deg, #1a73e8, #4285f4);
+      color: #ffffff;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 14px 20px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 14px rgba(26, 115, 232, 0.35);
+    }
+
+    .action-btn:hover:not(:disabled) {
+      background: linear-gradient(135deg, #1765cc, #3367d6);
+      transform: translateY(-1px);
+    }
+
+    .action-btn:disabled {
+      background: #252525;
+      color: #555555;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* Audio Player */
+    .audio-player-wrapper {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      background: #161616;
+      border: 1px solid #2a2a2a;
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+    }
+
+    .audio-player-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    audio {
+      width: 100%;
+      height: 36px;
+      outline: none;
+    }
+
+    /* Status & Progress */
+    .status-bar {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--text-muted);
+      padding: 12px;
+      background: #161616;
+      border-radius: var(--radius-sm);
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid #333333;
+      border-top-color: var(--accent-blue);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Results Card */
+    .results-card {
+      display: none;
+      gap: 16px;
+    }
+
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .results-title {
+      font-size: 16px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .meta-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .meta-pill {
+      background: #1b1b1b;
+      border: 1px solid #2b2b2b;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      color: var(--text-muted);
+    }
+
+    .meta-pill strong {
+      color: var(--text-main);
+    }
+
+    /* Transcript Controls Toolbar */
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .view-toggles {
+      display: flex;
+      background: #000000;
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-sm);
+      padding: 3px;
+      gap: 4px;
+    }
+
+    .view-btn {
+      padding: 6px 12px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 12px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .view-btn.active {
+      background: #252525;
+      color: #ffffff;
+    }
+
+    .export-btns {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-secondary {
+      background: #1b1b1b;
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-secondary:hover {
+      background: #272727;
+      border-color: #383838;
+    }
+
+    .btn-copy {
+      background: #0d2618;
+      border-color: #1a4d2c;
+      color: var(--accent-green);
+    }
+
+    .btn-copy:hover {
+      background: #143823;
+    }
+
+    /* Transcript Body */
+    .transcript-box {
+      background: #0a0a0a;
+      border: 1px solid #1f1f1f;
+      border-radius: var(--radius-md);
+      padding: 18px;
+      max-height: 480px;
+      overflow-y: auto;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* Continuous View */
+    .continuous-view {
+      white-space: pre-wrap;
+      color: #e4e7eb;
+    }
+
+    /* Segments View */
+    .segments-view {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .segment-item {
+      display: flex;
+      gap: 12px;
+      padding: 8px 12px;
+      background: #121212;
+      border: 1px solid #202020;
+      border-radius: var(--radius-sm);
+      transition: background 0.15s;
+    }
+
+    .segment-item:hover {
+      background: #181818;
+    }
+
+    .segment-time {
+      color: var(--accent-blue);
+      font-family: monospace;
+      font-size: 12px;
+      white-space: nowrap;
+      cursor: pointer;
+      padding-top: 2px;
+    }
+
+    .segment-time:hover {
+      text-decoration: underline;
+    }
+
+    .segment-text {
+      flex: 1;
+      color: var(--text-main);
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #1e4620;
+      color: #81c995;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 500;
+      border: 1px solid #2e6d32;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      transition: transform 0.25s cubic-bezier(0.1, 0.9, 0.2, 1);
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 600px) {
+      .settings-row {
+        grid-template-columns: 1fr;
+      }
+      .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">🎙️</div>
+      <div>
+        <h1>Friday Web Studio</h1>
+        <p>Offline Audio Transcription & Neural Translation</p>
+      </div>
+    </div>
+    <div class="gpu-badge">
+      <div class="gpu-dot"></div>
+      <span id="gpuStatusText">RTX 4060 GPU (CUDA)</span>
+    </div>
+  </header>
+
+  <!-- Upload & Config Card -->
+  <div class="card">
+    <!-- Mode Switcher -->
+    <div class="mode-tabs">
+      <button class="mode-tab active" id="tabTranscribe" onclick="setMode('transcribe')">
+        📝 Transcribe (Keep Original Language)
+      </button>
+      <button class="mode-tab" id="tabTranslate" onclick="setMode('translate')">
+        🌐 Translate to English (Offline Translation)
+      </button>
+    </div>
+
+    <!-- Dropzone -->
+    <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+      <div class="dropzone-icon">📁</div>
+      <div class="dropzone-title">Click to upload or drag & drop audio / video file</div>
+      <div class="dropzone-desc">Supports MP3, WAV, M4A, MP4, FLAC, OGG, WEBM, AAC (Up to 500MB)</div>
+      <input type="file" id="fileInput" class="file-input" accept="audio/*,video/*">
+    </div>
+
+    <!-- Selected File Meta -->
+    <div class="selected-file-card" id="fileCard">
+      <div class="file-meta">
+        <span class="file-meta-icon">🎵</span>
+        <div class="file-meta-text">
+          <span class="file-name" id="fileName">recording.mp3</span>
+          <span class="file-size" id="fileSize">14.2 MB</span>
+        </div>
+      </div>
+      <button class="remove-file-btn" onclick="clearFile()" title="Remove file">✕</button>
+    </div>
+
+    <!-- Audio Player Preview -->
+    <div class="audio-player-wrapper" id="playerWrapper">
+      <div class="audio-player-label">Audio Player</div>
+      <audio id="audioElement" controls></audio>
+    </div>
+
+    <!-- Settings Controls -->
+    <div class="settings-row">
+      <div class="setting-group">
+        <label for="modelSelect">Whisper Model:</label>
+        <select id="modelSelect">
+          <option value="large-v3-turbo" selected>large-v3-turbo (Highest Accuracy Sweet Spot — Recommended)</option>
+          <option value="medium">medium (Multilingual High Precision)</option>
+          <option value="small">small (Fast & Balanced)</option>
+          <option value="base">base (Ultra Fast)</option>
+          <option value="tiny">tiny (Fastest)</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <label for="langSelect" id="langLabel">Spoken Language:</label>
+        <select id="langSelect">
+          <option value="auto" selected>Auto-Detect Spoken Language</option>
+          <option value="en">English</option>
+          <option value="hi">Hindi (हिंदी)</option>
+          <option value="es">Spanish (Español)</option>
+          <option value="fr">French (Français)</option>
+          <option value="de">German (Deutsch)</option>
+          <option value="ja">Japanese (日本語)</option>
+          <option value="zh">Chinese (中文)</option>
+          <option value="ru">Russian (Русский)</option>
+          <option value="ar">Arabic (العربية)</option>
+          <option value="pt">Portuguese (Português)</option>
+          <option value="it">Italian (Italiano)</option>
+          <option value="ko">Korean (한국어)</option>
+          <option value="gu">Gujarati (ગુજરાતી)</option>
+          <option value="mr">Marathi (मराठी)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Action Button -->
+    <button class="action-btn" id="actionBtn" onclick="runProcessing()" disabled>
+      <span id="btnIcon">⚡</span>
+      <span id="btnText">Start Transcription</span>
+    </button>
+
+    <!-- Progress Status Bar -->
+    <div class="status-bar" id="statusBar">
+      <div class="spinner"></div>
+      <span id="statusText">Uploading and processing audio on NVIDIA RTX 4060 GPU...</span>
+    </div>
+  </div>
+
+  <!-- Results Card -->
+  <div class="card results-card" id="resultsCard">
+    <div class="results-header">
+      <div class="results-title">
+        <span>📄 Output Transcript</span>
+      </div>
+      <div class="meta-pills" id="metaPills">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="view-toggles">
+        <button class="view-btn active" id="viewBtnContinuous" onclick="setViewMode('continuous')">Text View</button>
+        <button class="view-btn" id="viewBtnSegments" onclick="setViewMode('segments')">Timestamp Segments</button>
+      </div>
+
+      <div class="export-btns">
+        <button class="btn-secondary btn-copy" onclick="copyFullTranscript()">
+          <span>📋</span> Copy to Clipboard
+        </button>
+        <button class="btn-secondary" onclick="exportFile('txt')">
+          <span>📄</span> TXT
+        </button>
+        <button class="btn-secondary" onclick="exportFile('srt')">
+          <span>🎬</span> SRT
+        </button>
+        <button class="btn-secondary" onclick="exportFile('vtt')">
+          <span>🌐</span> VTT
+        </button>
+      </div>
+    </div>
+
+    <!-- Transcript Content Box -->
+    <div class="transcript-box" id="transcriptBox">
+      <div class="continuous-view" id="continuousView"></div>
+      <div class="segments-view" id="segmentsView" style="display: none;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Feedback -->
+<div class="toast" id="toast">
+  <span>✓</span> <span id="toastMsg">Copied to clipboard!</span>
+</div>
+
+<script>
+  let currentFile = null;
+  let currentTask = "transcribe"; // "transcribe" or "translate"
+  let currentView = "continuous"; // "continuous" or "segments"
+  let currentResult = null;
+
+  // Initialize status on load
+  window.addEventListener("DOMContentLoaded", async () => {
+    setupDragDrop();
+    try {
+      const res = await fetch("/api/status");
+      if (res.ok) {
+        const data = await res.json();
+        document.getElementById("gpuStatusText").innerText = `${data.gpu_name.replace(" Laptop GPU", "")} (CUDA)`;
+      }
+    } catch (e) {
+      console.log("Status check:", e);
+    }
+  });
+
+  function setMode(mode) {
+    currentTask = mode;
+    const tabTranscribe = document.getElementById("tabTranscribe");
+    const tabTranslate = document.getElementById("tabTranslate");
+    const btnText = document.getElementById("btnText");
+
+    if (mode === "transcribe") {
+      tabTranscribe.classList.add("active");
+      tabTranslate.classList.remove("active");
+      btnText.innerText = "Start Transcription";
+    } else {
+      tabTranslate.classList.add("active");
+      tabTranscribe.classList.remove("active");
+      btnText.innerText = "Start Translation (to English)";
+    }
+  }
+
+  function setupDragDrop() {
+    const dropzone = document.getElementById("dropzone");
+    const fileInput = document.getElementById("fileInput");
+
+    dropzone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropzone.classList.add("dragover");
+    });
+
+    dropzone.addEventListener("dragleave", () => {
+      dropzone.classList.remove("dragover");
+    });
+
+    dropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropzone.classList.remove("dragover");
+      if (e.dataTransfer.files.length > 0) {
+        selectFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener("change", (e) => {
+      if (fileInput.files.length > 0) {
+        selectFile(fileInput.files[0]);
+      }
+    });
+  }
+
+  function selectFile(file) {
+    currentFile = file;
+    document.getElementById("fileName").innerText = file.name;
+    document.getElementById("fileSize").innerText = formatBytes(file.size);
+    document.getElementById("dropzone").style.display = "none";
+    document.getElementById("fileCard").style.display = "flex";
+    document.getElementById("actionBtn").disabled = false;
+
+    // Load into audio preview
+    const audioEl = document.getElementById("audioElement");
+    const url = URL.createObjectURL(file);
+    audioEl.src = url;
+    document.getElementById("playerWrapper").style.display = "flex";
+  }
+
+  function clearFile() {
+    currentFile = null;
+    document.getElementById("fileInput").value = "";
+    document.getElementById("dropzone").style.display = "flex";
+    document.getElementById("fileCard").style.display = "none";
+    document.getElementById("playerWrapper").style.display = "none";
+    document.getElementById("audioElement").src = "";
+    document.getElementById("actionBtn").disabled = true;
+  }
+
+  function formatBytes(bytes) {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  }
+
+  async function runProcessing() {
+    if (!currentFile) return;
+
+    const actionBtn = document.getElementById("actionBtn");
+    const statusBar = document.getElementById("statusBar");
+    const statusText = document.getElementById("statusText");
+    const resultsCard = document.getElementById("resultsCard");
+
+    actionBtn.disabled = true;
+    statusBar.style.display = "flex";
+    statusText.innerText = `Processing audio on NVIDIA RTX 4060 GPU (${currentTask})...`;
+
+    const formData = new FormData();
+    formData.append("file", currentFile);
+    formData.append("task", currentTask);
+    formData.append("model", document.getElementById("modelSelect").value);
+    formData.append("language", document.getElementById("langSelect").value);
+
+    try {
+      const response = await fetch("/api/transcribe", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.error || "Processing failed");
+      }
+
+      currentResult = data;
+      renderResults(data);
+      resultsCard.style.display = "flex";
+      resultsCard.scrollIntoView({ behavior: "smooth" });
+    } catch (err) {
+      alert("Error: " + err.message);
+    } finally {
+      actionBtn.disabled = false;
+      statusBar.style.display = "none";
+    }
+  }
+
+  function renderResults(data) {
+    // Render Meta Pills
+    const pills = document.getElementById("metaPills");
+    pills.innerHTML = `
+      <div class="meta-pill">Language: <strong>${(data.language || "Unknown").toUpperCase()}</strong></div>
+      <div class="meta-pill">Audio: <strong>${data.duration}s</strong></div>
+      <div class="meta-pill">RTX 4060 Latency: <strong>${data.latency}s</strong></div>
+      <div class="meta-pill">Model: <strong>${data.model}</strong></div>
+    `;
+
+    // Continuous view
+    document.getElementById("continuousView").innerText = data.text || "(No speech detected)";
+
+    // Segments view
+    const segmentsView = document.getElementById("segmentsView");
+    segmentsView.innerHTML = "";
+    if (data.segments && data.segments.length > 0) {
+      data.segments.forEach(seg => {
+        const item = document.createElement("div");
+        item.className = "segment-item";
+        item.innerHTML = `
+          <span class="segment-time" onclick="seekAudio(${seg.start})" title="Play from here">[${formatTime(seg.start)} - ${formatTime(seg.end)}]</span>
+          <span class="segment-text">${escapeHtml(seg.text)}</span>
+        `;
+        segmentsView.appendChild(item);
+      });
+    } else {
+      segmentsView.innerHTML = "<div style='color: var(--text-muted);'>No segment breakdown available.</div>";
+    }
+
+    setViewMode(currentView);
+  }
+
+  function seekAudio(seconds) {
+    const audio = document.getElementById("audioElement");
+    audio.currentTime = seconds;
+    audio.play();
+  }
+
+  function formatTime(secs) {
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.innerText = text;
+    return div.innerHTML;
+  }
+
+  function setViewMode(mode) {
+    currentView = mode;
+    const btnCont = document.getElementById("viewBtnContinuous");
+    const btnSeg = document.getElementById("viewBtnSegments");
+    const viewCont = document.getElementById("continuousView");
+    const viewSeg = document.getElementById("segmentsView");
+
+    if (mode === "continuous") {
+      btnCont.classList.add("active");
+      btnSeg.classList.remove("active");
+      viewCont.style.display = "block";
+      viewSeg.style.display = "none";
+    } else {
+      btnSeg.classList.add("active");
+      btnCont.classList.remove("active");
+      viewSeg.style.display = "flex";
+      viewCont.style.display = "none";
+    }
+  }
+
+  async function copyFullTranscript() {
+    if (!currentResult || !currentResult.text) return;
+    try {
+      await navigator.clipboard.writeText(currentResult.text);
+      showToast("Copied transcript to clipboard!");
+    } catch {
+      // Fallback via server
+      await fetch("/api/copy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: currentResult.text })
+      });
+      showToast("Copied to Windows clipboard!");
+    }
+  }
+
+  async function exportFile(fmt) {
+    if (!currentResult) return;
+    const baseName = (currentFile ? currentFile.name.replace(/\.[^/.]+$/, "") : "transcript");
+    const res = await fetch("/api/export", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        segments: currentResult.segments || [],
+        format: fmt,
+        filename: `${baseName}_${currentTask}`,
+      }),
+    });
+
+    if (res.ok) {
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${baseName}_${currentTask}.${fmt}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      showToast(`Downloaded ${fmt.toUpperCase()}!`);
+    }
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById("toast");
+    document.getElementById("toastMsg").innerText = msg;
+    toast.classList.add("show");
+    setTimeout(() => {
+      toast.classList.remove("show");
+    }, 2400);
+  }
+</script>
+</body>
+</html>

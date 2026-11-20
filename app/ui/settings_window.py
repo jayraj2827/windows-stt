@@ -105,11 +105,32 @@ class SettingsWindow(QWidget):
         self.status_feedback = QLabel("", self)
         self.status_feedback.setStyleSheet("color: #8ab4f8; font-size: 12px; font-weight: 500;")
 
+        web_btn = QPushButton("🌐 Launch Web Studio", self)
+        web_btn.setMinimumHeight(38)
+        web_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #141414;
+                border: 1px solid #2e2e2e;
+                color: #8ab4f8;
+                border-radius: 6px;
+                padding: 6px 16px;
+                font-size: 12px;
+                font-weight: 600;
+            }
+            QPushButton:hover {
+                background-color: #1f1f1f;
+                border-color: #8ab4f8;
+            }
+        """)
+        web_btn.clicked.connect(self._launch_web_studio)
+
         save_btn = QPushButton("Save & Apply Settings", self)
         save_btn.setObjectName("primary_button")
         save_btn.setMinimumHeight(38)
         save_btn.clicked.connect(self._save_and_apply)
 
+        bottom_bar.addWidget(web_btn)
+        bottom_bar.addSpacing(10)
         bottom_bar.addWidget(self.status_feedback)
         bottom_bar.addStretch()
         bottom_bar.addWidget(save_btn)
@@ -436,6 +457,20 @@ class SettingsWindow(QWidget):
 
         if model_changed:
             self.sig_reload_model_requested.emit(raw_model)
+
+    def _launch_web_studio(self):
+        """Launch the Friday Web Studio in default browser."""
+        import subprocess
+        import webbrowser
+        web_bat = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "run_web.bat")
+        if os.path.exists(web_bat):
+            try:
+                subprocess.Popen(["cmd.exe", "/c", "start", "", web_bat], shell=False)
+                self.status_feedback.setText("Launching Web Studio...")
+            except Exception:
+                webbrowser.open("http://127.0.0.1:8765")
+        else:
+            webbrowser.open("http://127.0.0.1:8765")
 
         self.status_feedback.setText("✓ Settings saved and applied successfully!")
         QTimer.singleShot(2500, lambda: self.status_feedback.setText(""))
