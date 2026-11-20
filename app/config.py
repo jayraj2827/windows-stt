@@ -14,7 +14,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "input_device_index": None,
     "mic_mode": "on_demand",  # "on_demand" (open only while pressing key) or "always_ready"
     "injection_method": "clipboard",  # "clipboard" or "typing"
-    "restore_clipboard": True,
+    "restore_clipboard": False,  # Keep transcript in clipboard (Safe Mode — never lose speech)
     "overlay_enabled": True,
     "language": "en",
     "vad_filter": True,

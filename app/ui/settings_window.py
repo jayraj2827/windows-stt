@@ -276,8 +276,9 @@ class SettingsWindow(QWidget):
         layout.addWidget(header)
 
         # Checkboxes for text injection mode
-        self.check_clipboard = QCheckBox("Clipboard Paste (Recommended — Instant & preserves existing clipboard)", card)
+        self.check_clipboard = QCheckBox("Clipboard Paste (Instant Ctrl+V injection)", card)
         self.check_typing = QCheckBox("Simulated Typing (Character by character fallback)", card)
+        self.check_safe_clipboard = QCheckBox("Clipboard Safe Mode (Always keep speech in clipboard — never lose words if no text box was focused)", card)
         self.check_overlay = QCheckBox("Show floating status pill widget while speaking", card)
 
         self.check_clipboard.toggled.connect(self._on_clipboard_toggled)
@@ -285,6 +286,7 @@ class SettingsWindow(QWidget):
 
         layout.addWidget(self.check_clipboard)
         layout.addWidget(self.check_typing)
+        layout.addWidget(self.check_safe_clipboard)
         layout.addWidget(self.check_overlay)
 
         return card
@@ -369,6 +371,7 @@ class SettingsWindow(QWidget):
             self.check_clipboard.setChecked(True)
             self.check_typing.setChecked(False)
 
+        self.check_safe_clipboard.setChecked(not self.config.get("restore_clipboard", False))
         self.check_overlay.setChecked(self.config.get("overlay_enabled", True))
 
     def _toggle_mic_test(self):
@@ -425,6 +428,7 @@ class SettingsWindow(QWidget):
         self.config["input_device_index"] = self.combo_device.currentData()
         self.config["mic_mode"] = self.combo_mic_mode.currentData()
         self.config["injection_method"] = "typing" if self.check_typing.isChecked() else "clipboard"
+        self.config["restore_clipboard"] = not self.check_safe_clipboard.isChecked()
         self.config["overlay_enabled"] = self.check_overlay.isChecked()
 
         save_config(self.config)

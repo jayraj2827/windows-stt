@@ -32,14 +32,17 @@ def send_paste_event():
 
 
 class TextInjector:
-    def __init__(self, method: str = "clipboard", restore_clipboard: bool = True):
+    def __init__(self, method: str = "clipboard", restore_clipboard: bool = False):
         self.method = method  # "clipboard" or "typing"
         self.restore_clipboard = restore_clipboard
+        self.last_transcript: Optional[str] = None
 
     def inject(self, text: str) -> bool:
         """
         Inject text into the currently active target window.
         Returns True on success.
+        Guarantees that the transcribed text is stored in the clipboard so it never vanishes,
+        even if no text box was focused.
         """
         if not text:
             return False
@@ -48,10 +51,17 @@ class TextInjector:
         if not clean_text:
             return False
 
+        self.last_transcript = clean_text
         payload = clean_text + " "
 
+        # Always copy the transcript to clipboard first so it is never lost
+        try:
+            pyperclip.copy(clean_text)
+        except Exception as e:
+            print(f"[TextInjector] Clipboard copy warning: {e}")
+
         if self.method == "clipboard":
-            # Attempt clipboard injection first
+            # Attempt clipboard injection
             success = self._inject_via_clipboard(payload)
             if not success:
                 print("[TextInjector] Clipboard injection failed; falling back to typing.")
@@ -61,7 +71,7 @@ class TextInjector:
             return self._inject_via_typing(payload)
 
     def _inject_via_clipboard(self, text: str) -> bool:
-        """Backup clipboard, copy target text, send Ctrl+V, then restore original clipboard."""
+        """Copy target text to clipboard, send Ctrl+V, and keep it safe on clipboard."""
         previous_clipboard: Optional[str] = None
         if self.restore_clipboard:
             for _ in range(3):
@@ -71,7 +81,7 @@ class TextInjector:
                 except Exception:
                     time.sleep(0.03)
 
-        # Copy new text to clipboard with retry
+        # Copy text with retry
         copied = False
         for _ in range(3):
             try:
@@ -92,17 +102,29 @@ class TextInjector:
         # Wait briefly for the receiving window to process the paste message
         time.sleep(0.08)
 
-        # Restore original clipboard content if configured
+        # Only restore old clipboard if explicitly requested (default is False so speech is never lost)
         if self.restore_clipboard and previous_clipboard is not None:
             try:
                 pyperclip.copy(previous_clipboard)
+            except Exception:
+                pass
+        else:
+            # Leave clean transcript in clipboard for manual pasting if needed
+            try:
+                pyperclip.copy(text.strip())
             except Exception:
                 pass
 
         return True
 
     def _inject_via_typing(self, text: str) -> bool:
-        """Simulate direct typing into the active window."""
+        """Simulate direct typing into the active window while preserving clipboard safety."""
+        # Ensure clipboard also has the transcript
+        try:
+            pyperclip.copy(text.strip())
+        except Exception:
+            pass
+
         try:
             import pyautogui
             pyautogui.write(text, interval=0.005)

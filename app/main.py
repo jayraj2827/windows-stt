@@ -233,6 +233,7 @@ class AppCoordinator(QObject):
         new_dev = new_config.get("input_device_index")
         self.config = new_config
         self.injector.method = self.config.get("injection_method", "clipboard")
+        self.injector.restore_clipboard = self.config.get("restore_clipboard", False)
         self.hotkeys.update_hotkeys(
             self.config.get("hotkey_hold", "<ctrl>+<space>"),
             self.config.get("hotkey_toggle", "<ctrl>+<shift>+<space>"),
