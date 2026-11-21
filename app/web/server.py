@@ -21,6 +21,7 @@ from pydantic import BaseModel
 
 from app.core.formatters import segments_to_srt, segments_to_txt, segments_to_vtt
 from app.core.whisper_engine import WhisperEngine
+from app.core.translator import get_translator, SUPPORTED_LANGUAGES
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 HTML_FILE = os.path.join(STATIC_DIR, "index.html")
@@ -82,7 +83,7 @@ class ExportRequest(BaseModel):
 class TextTranslateRequest(BaseModel):
     text: str
     source_lang: str = "auto"
-    target_lang: str = "en"
+    target_lang: str = "hin_Deva"
 
 
 # FastAPI Application Instance
@@ -116,9 +117,34 @@ async def favicon():
     return Response(status_code=204)
 
 
+@app.get("/api/languages")
+async def get_languages():
+    """Return list of supported translation languages."""
+    return {"languages": SUPPORTED_LANGUAGES}
+
+
+@app.post("/api/translate")
+async def translate_text(payload: TextTranslateRequest):
+    """
+    Translate text using local Meta NLLB-200 on RTX 4060 GPU (CUDA float16).
+    """
+    if not payload.text or not payload.text.strip():
+        raise HTTPException(status_code=400, detail="No text provided for translation.")
+
+    translator = get_translator()
+    result = translator.translate(
+        text=payload.text,
+        source_lang=payload.source_lang,
+        target_lang=payload.target_lang,
+    )
+    if not result.get("success", False):
+        raise HTTPException(status_code=500, detail=result.get("error", "Translation failed"))
+    return result
+
+
 @app.get("/api/status")
 async def get_status():
-    """Query current GPU acceleration status and loaded Whisper model."""
+    """Query current GPU acceleration status, loaded Whisper model, and NLLB translator."""
     engine = get_web_engine()
     return {
         "status": "ready" if engine.is_ready else "loading",

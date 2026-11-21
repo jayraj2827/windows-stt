@@ -14,6 +14,10 @@ __pycache__/
 *.log
 .stt.pid
 
+# Large Model Weights (Local Offline Storage)
+models/
+*.bin
+
 # IDE & OS
 .vscode/
 .idea/

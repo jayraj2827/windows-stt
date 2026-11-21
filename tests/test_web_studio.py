@@ -1,6 +1,7 @@
 """
-Test suite for Friday Web Studio formatters and engine.
+Test suite for Friday Web Studio formatters, engine, and FastAPI endpoints.
 """
+import asyncio
 import os
 import sys
 
@@ -9,6 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.core.formatters import segments_to_srt, segments_to_txt, segments_to_vtt, format_timestamp
 from app.core.whisper_engine import WhisperEngine
+from app.web.server import get_languages, translate_text, TextTranslateRequest, get_status
 
 
 def test_format_timestamp():
@@ -44,9 +46,34 @@ def test_core_engine_import():
     print("[PASS] Core WhisperEngine instantiated successfully!")
 
 
+def test_fastapi_endpoints():
+    # 1. Languages endpoint
+    langs_resp = asyncio.run(get_languages())
+    assert "languages" in langs_resp
+    assert any(l["code"] == "hin_Deva" for l in langs_resp["languages"])
+    print(f"[PASS] /api/languages returned {len(langs_resp['languages'])} supported languages!")
+
+    # 2. Status endpoint
+    status_resp = asyncio.run(get_status())
+    assert "gpu_name" in status_resp
+    print(f"[PASS] /api/status verified ({status_resp['gpu_name']})")
+
+    # 3. Translation endpoint
+    req = TextTranslateRequest(
+        text="Friday AI Studio provides offline speech and translation capabilities.",
+        source_lang="en",
+        target_lang="hi"
+    )
+    trans_resp = asyncio.run(translate_text(req))
+    assert trans_resp["success"] is True
+    assert trans_resp["target_lang"] == "hin_Deva"
+    print(f"[PASS] /api/translate verified: '{trans_resp['translated_text']}' ({trans_resp['latency']}s)")
+
+
 if __name__ == "__main__":
-    print("--- Testing Web Studio Core ---")
+    print("--- Testing Web Studio Core & API ---")
     test_format_timestamp()
     test_subtitle_formatters()
     test_core_engine_import()
+    test_fastapi_endpoints()
     print("=== ALL WEB STUDIO TESTS PASSED ===")

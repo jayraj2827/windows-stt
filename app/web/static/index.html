@@ -712,8 +712,82 @@
     }
 
     /* ========================================================= */
-    /* DUAL-PANE TRANSLATOR (GOOGLE TRANSLATE STYLE)             */
+    /* DUAL-PANE TRANSLATOR (PRO UI/UX - GOOGLE TRANSLATE / DEEPL) */
     /* ========================================================= */
+    .translator-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+      padding: 8px 14px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      flex-wrap: wrap;
+    }
+
+    .lang-pills {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .lang-pill {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.16s ease;
+      user-select: none;
+    }
+
+    .lang-pill:hover {
+      background: var(--surface-hover);
+      color: var(--text);
+    }
+
+    .lang-pill.active {
+      background: var(--accent-light);
+      border-color: rgba(99, 102, 241, 0.4);
+      color: #818cf8;
+      font-weight: 600;
+    }
+
+    .btn-swap-lang {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      flex-shrink: 0;
+    }
+
+    .btn-swap-lang:hover {
+      background: var(--surface-hover);
+      color: #fff;
+      border-color: var(--accent);
+      transform: rotate(180deg) scale(1.05);
+      box-shadow: 0 0 14px rgba(99, 102, 241, 0.28);
+    }
+
+    .btn-swap-lang svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
     .translator-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -722,12 +796,18 @@
     }
 
     .pane-card {
-      background: #0d0e11;
+      background: #0b0c0e;
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .pane-card:focus-within {
+      border-color: rgba(99, 102, 241, 0.5);
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.08);
     }
 
     .pane-header {
@@ -739,14 +819,29 @@
       justify-content: space-between;
     }
 
-    .pane-select {
-      background: transparent;
-      border: none;
-      color: var(--text);
-      font-size: 13px;
+    .pane-title {
+      font-size: 12px;
       font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+    }
+
+    .pane-select {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 12.5px;
+      font-weight: 500;
+      border-radius: var(--radius-sm);
+      padding: 4px 8px;
       cursor: pointer;
       outline: none;
+      transition: border-color 0.15s ease;
+    }
+
+    .pane-select:focus {
+      border-color: var(--accent);
     }
 
     .pane-select option {
@@ -756,10 +851,10 @@
 
     .pane-body {
       flex: 1;
-      min-height: 220px;
+      min-height: 250px;
       display: flex;
       flex-direction: column;
-      padding: 16px;
+      padding: 18px;
       position: relative;
     }
 
@@ -770,25 +865,58 @@
       border: none;
       outline: none;
       color: var(--text);
-      font-size: 15px;
-      line-height: 1.6;
+      font-size: 15.5px;
+      line-height: 1.65;
       resize: none;
       font-family: inherit;
     }
 
     .pane-textarea::placeholder {
       color: var(--text-dim);
+      font-size: 14.5px;
     }
 
     .pane-footer {
-      padding: 8px 16px;
+      padding: 10px 16px;
       border-top: 1px solid var(--border);
       background: var(--surface);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      font-size: 11.5px;
+      font-size: 12px;
       color: var(--text-dim);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--emerald);
+    }
+
+    /* Translate Bridge Button in STT Toolbar */
+    .btn-translate-bridge {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.16), rgba(168, 85, 247, 0.16)) !important;
+      border: 1px solid rgba(139, 92, 246, 0.4) !important;
+      color: #c4b5fd !important;
+      font-weight: 600 !important;
+    }
+
+    .btn-translate-bridge:hover {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(168, 85, 247, 0.3)) !important;
+      border-color: #a855f7 !important;
+      color: #ffffff !important;
+      box-shadow: 0 0 16px rgba(168, 85, 247, 0.3) !important;
+    }
+
+    .btn-translate-bridge svg {
+      fill: #c4b5fd !important;
+    }
+
+    .btn-translate-bridge:hover svg {
+      fill: #ffffff !important;
     }
 
     .pane-actions {
@@ -1045,6 +1173,10 @@
             </div>
 
             <div class="action-group">
+              <button class="btn-secondary btn-translate-bridge" onclick="sendToTranslator()" title="Send transcript to Translator for Hindi output">
+                <svg viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>
+                <span>Translate to Hindi</span>
+              </button>
               <button class="btn-secondary btn-copy-highlight" onclick="copySttText()">
                 <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
                 <span>Copy Transcript</span>
@@ -1074,37 +1206,90 @@
     </section>
 
     <!-- ===================================================== -->
-    <!-- 2. TRANSLATOR VIEW (DUAL-PANE GOOGLE TRANSLATE STYLE) -->
+    <!-- 2. TRANSLATOR VIEW (PRO DUAL-PANE NLLB TRANSLATOR)     -->
     <!-- ===================================================== -->
     <section class="view-section" id="viewTranslator">
       <div class="section-header">
         <h1 class="section-title">Neural Offline Translator</h1>
-        <p class="section-desc">Translate text and spoken speech into other languages offline with zero cloud APIs.</p>
+        <p class="section-desc">Meta NLLB-200 via CTranslate2 running 100% offline on NVIDIA RTX 4060 GPU (CUDA float16).</p>
       </div>
 
       <div class="card">
+        <!-- Top Language Selector Bar (Google Translate / DeepL Style) -->
+        <div class="translator-bar">
+          <!-- Left: Source Language Pills -->
+          <div class="lang-pills">
+            <button class="lang-pill active src-lang-pill" data-code="auto" onclick="setSourceLang('auto')">Auto-Detect</button>
+            <button class="lang-pill src-lang-pill" data-code="eng_Latn" onclick="setSourceLang('eng_Latn')">English</button>
+            <button class="lang-pill src-lang-pill" data-code="hin_Deva" onclick="setSourceLang('hin_Deva')">Hindi</button>
+            <button class="lang-pill src-lang-pill" data-code="guj_Gujr" onclick="setSourceLang('guj_Gujr')">Gujarati</button>
+            <button class="lang-pill src-lang-pill" data-code="spa_Latn" onclick="setSourceLang('spa_Latn')">Spanish</button>
+            <select class="pane-select" id="transSourceSelect" onchange="onSourceSelectChange(this.value)">
+              <option value="auto" selected>Detect Language</option>
+              <option value="eng_Latn">English</option>
+              <option value="hin_Deva">Hindi (हिंदी)</option>
+              <option value="guj_Gujr">Gujarati (ગુજરાતી)</option>
+              <option value="mar_Deva">Marathi (मराठी)</option>
+              <option value="ben_Beng">Bengali (বাংলা)</option>
+              <option value="tam_Taml">Tamil (தமிழ்)</option>
+              <option value="tel_Telu">Telugu (తెలుగు)</option>
+              <option value="urd_Arab">Urdu (اردو)</option>
+              <option value="pan_Guru">Punjabi (ਪੰਜਾਬੀ)</option>
+              <option value="spa_Latn">Spanish (Español)</option>
+              <option value="fra_Latn">French (Français)</option>
+              <option value="deu_Latn">German (Deutsch)</option>
+              <option value="jpn_Jpan">Japanese (日本語)</option>
+              <option value="zho_Hans">Chinese (中文)</option>
+              <option value="rus_Cyrl">Russian (Русский)</option>
+              <option value="ara_Arab">Arabic (العربية)</option>
+              <option value="por_Latn">Portuguese (Português)</option>
+              <option value="ita_Latn">Italian (Italiano)</option>
+              <option value="kor_Hang">Korean (한국어)</option>
+            </select>
+          </div>
+
+          <!-- Center: Interactive Swap Button -->
+          <button class="btn-swap-lang" onclick="swapLanguages()" title="Swap languages and text">
+            <svg viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
+          </button>
+
+          <!-- Right: Target Language Pills -->
+          <div class="lang-pills">
+            <button class="lang-pill active tgt-lang-pill" data-code="hin_Deva" onclick="setTargetLang('hin_Deva')">Hindi (हिंदी)</button>
+            <button class="lang-pill tgt-lang-pill" data-code="eng_Latn" onclick="setTargetLang('eng_Latn')">English</button>
+            <button class="lang-pill tgt-lang-pill" data-code="guj_Gujr" onclick="setTargetLang('guj_Gujr')">Gujarati</button>
+            <button class="lang-pill tgt-lang-pill" data-code="mar_Deva" onclick="setTargetLang('mar_Deva')">Marathi</button>
+            <button class="lang-pill tgt-lang-pill" data-code="spa_Latn" onclick="setTargetLang('spa_Latn')">Spanish</button>
+            <select class="pane-select" id="transTargetSelect" onchange="onTargetSelectChange(this.value)">
+              <option value="hin_Deva" selected>Hindi (हिंदी)</option>
+              <option value="eng_Latn">English</option>
+              <option value="guj_Gujr">Gujarati (ગુજરાતી)</option>
+              <option value="mar_Deva">Marathi (मराठी)</option>
+              <option value="ben_Beng">Bengali (বাংলা)</option>
+              <option value="tam_Taml">Tamil (தமிழ்)</option>
+              <option value="tel_Telu">Telugu (తెలుగు)</option>
+              <option value="urd_Arab">Urdu (اردو)</option>
+              <option value="pan_Guru">Punjabi (ਪੰਜਾਬੀ)</option>
+              <option value="spa_Latn">Spanish (Español)</option>
+              <option value="fra_Latn">French (Français)</option>
+              <option value="deu_Latn">German (Deutsch)</option>
+              <option value="jpn_Jpan">Japanese (日本語)</option>
+              <option value="zho_Hans">Chinese (中文)</option>
+              <option value="rus_Cyrl">Russian (Русский)</option>
+              <option value="ara_Arab">Arabic (العربية)</option>
+              <option value="por_Latn">Portuguese (Português)</option>
+              <option value="ita_Latn">Italian (Italiano)</option>
+              <option value="kor_Hang">Korean (한국어)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Dual Pane Grid -->
         <div class="translator-grid">
-          <!-- Left Pane (Source) -->
+          <!-- Left Pane (Source Text) -->
           <div class="pane-card">
             <div class="pane-header">
-              <select class="pane-select" id="transSourceSelect">
-                <option value="auto" selected>Detect Language</option>
-                <option value="en">English</option>
-                <option value="hi">Hindi (हिंदी)</option>
-                <option value="es">Spanish (Español)</option>
-                <option value="fr">French (Français)</option>
-                <option value="de">German (Deutsch)</option>
-                <option value="ja">Japanese (日本語)</option>
-                <option value="zh">Chinese (中文)</option>
-                <option value="ru">Russian (Русский)</option>
-                <option value="ar">Arabic (العربية)</option>
-                <option value="pt">Portuguese (Português)</option>
-                <option value="it">Italian (Italiano)</option>
-                <option value="ko">Korean (한국어)</option>
-                <option value="gu">Gujarati (ગુજરાતી)</option>
-                <option value="mr">Marathi (मराठी)</option>
-              </select>
-
+              <span class="pane-title">Source Text</span>
               <div class="pane-actions">
                 <button class="pane-btn-icon" onclick="clearTransInput()" title="Clear text">
                   <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
@@ -1113,12 +1298,13 @@
             </div>
 
             <div class="pane-body">
-              <textarea class="pane-textarea" id="transInputText" placeholder="Type or paste text to translate..." oninput="updateCharCount()"></textarea>
+              <textarea class="pane-textarea" id="transInputText" placeholder="Type or paste text to translate... (Press Ctrl + Enter to translate)" oninput="updateCharCount()"></textarea>
             </div>
 
             <div class="pane-footer">
-              <span id="transCharCount">0 characters</span>
+              <span id="transCharCount">0 words &bull; 0 characters</span>
               <div class="pane-actions">
+                <span class="kbd-pill" style="font-size: 11px;">Ctrl + Enter</span>
                 <button class="pane-btn-icon" onclick="pasteFromClipboard()" title="Paste from clipboard">
                   <svg viewBox="0 0 24 24"><path d="M19 2h-4.18C14.4.84 13.3 0 12 0c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z"/></svg>
                 </button>
@@ -1129,36 +1315,23 @@
           <!-- Right Pane (Target Translation) -->
           <div class="pane-card">
             <div class="pane-header">
-              <select class="pane-select" id="transTargetSelect">
-                <option value="en" selected>English</option>
-                <option value="hi">Hindi (हिंदी)</option>
-                <option value="es">Spanish (Español)</option>
-                <option value="fr">French (Français)</option>
-                <option value="de">German (Deutsch)</option>
-                <option value="ja">Japanese (日本語)</option>
-                <option value="zh">Chinese (中文)</option>
-                <option value="ru">Russian (Русский)</option>
-                <option value="ar">Arabic (العربية)</option>
-                <option value="pt">Portuguese (Português)</option>
-                <option value="it">Italian (Italiano)</option>
-                <option value="ko">Korean (한국어)</option>
-                <option value="gu">Gujarati (ગુજરાતી)</option>
-                <option value="mr">Marathi (मराठी)</option>
-              </select>
-
+              <span class="pane-title">Neural Translation</span>
               <div class="pane-actions">
                 <button class="pane-btn-icon" onclick="copyTransOutput()" title="Copy translation">
                   <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                </button>
+                <button class="pane-btn-icon" onclick="exportTransTxt()" title="Download TXT">
+                  <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
                 </button>
               </div>
             </div>
 
             <div class="pane-body">
-              <textarea class="pane-textarea" id="transOutputText" placeholder="Translation appears here..." readonly></textarea>
+              <textarea class="pane-textarea" id="transOutputText" placeholder="High-accuracy neural translation will appear here..." readonly></textarea>
             </div>
 
             <div class="pane-footer">
-              <span id="transOutputStatus">Ready</span>
+              <span id="transOutputStatus" class="status-badge">⚡ Ready &bull; CUDA float16</span>
               <div class="pane-actions">
                 <button class="pane-btn-icon" onclick="copyTransOutput()" title="Copy translation">
                   <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
@@ -1168,10 +1341,12 @@
           </div>
         </div>
 
-        <button class="btn-primary" onclick="performTranslation()">
-          <svg viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>
-          <span>Translate</span>
-        </button>
+        <div style="margin-top: 14px; display: flex; align-items: center; justify-content: flex-end; gap: 12px;">
+          <button class="btn-primary" id="btnTranslateAction" onclick="performTranslation()" style="padding: 10px 24px; font-size: 14px;">
+            <svg viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>
+            <span>Translate Text</span>
+          </button>
+        </div>
       </div>
     </section>
 
@@ -1451,17 +1626,80 @@
     }
 
     // ==========================================
-    // TRANSLATOR LOGIC
+    // TRANSLATOR & STT BRIDGE LOGIC
     // ==========================================
     function updateCharCount() {
-      const len = document.getElementById("transInputText").value.length;
-      document.getElementById("transCharCount").innerText = `${len} characters`;
+      const text = document.getElementById("transInputText").value;
+      const chars = text.length;
+      const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+      document.getElementById("transCharCount").innerText = `${words} words • ${chars} characters`;
     }
 
     function clearTransInput() {
       document.getElementById("transInputText").value = "";
       document.getElementById("transOutputText").value = "";
+      document.getElementById("transOutputStatus").innerText = "⚡ Ready • CUDA float16";
       updateCharCount();
+    }
+
+    function setSourceLang(code) {
+      document.getElementById("transSourceSelect").value = code;
+      document.querySelectorAll(".src-lang-pill").forEach(p => {
+        p.classList.toggle("active", p.dataset.code === code);
+      });
+      const input = document.getElementById("transInputText").value.trim();
+      if (input) performTranslation();
+    }
+
+    function onSourceSelectChange(code) {
+      document.querySelectorAll(".src-lang-pill").forEach(p => {
+        p.classList.toggle("active", p.dataset.code === code);
+      });
+      const input = document.getElementById("transInputText").value.trim();
+      if (input) performTranslation();
+    }
+
+    function setTargetLang(code) {
+      document.getElementById("transTargetSelect").value = code;
+      document.querySelectorAll(".tgt-lang-pill").forEach(p => {
+        p.classList.toggle("active", p.dataset.code === code);
+      });
+      const input = document.getElementById("transInputText").value.trim();
+      if (input) performTranslation();
+    }
+
+    function onTargetSelectChange(code) {
+      document.querySelectorAll(".tgt-lang-pill").forEach(p => {
+        p.classList.toggle("active", p.dataset.code === code);
+      });
+      const input = document.getElementById("transInputText").value.trim();
+      if (input) performTranslation();
+    }
+
+    function swapLanguages() {
+      const srcSelect = document.getElementById("transSourceSelect");
+      const tgtSelect = document.getElementById("transTargetSelect");
+      const oldSrc = srcSelect.value;
+      const oldTgt = tgtSelect.value;
+
+      // Don't swap if source was auto
+      const newSrc = oldTgt;
+      const newTgt = (oldSrc === "auto") ? "eng_Latn" : oldSrc;
+
+      setSourceLang(newSrc);
+      setTargetLang(newTgt);
+
+      // Also swap text if target has text
+      const inputEl = document.getElementById("transInputText");
+      const outputEl = document.getElementById("transOutputText");
+      const currentTargetText = outputEl.value.trim();
+
+      if (currentTargetText) {
+        inputEl.value = currentTargetText;
+        outputEl.value = "";
+        updateCharCount();
+        performTranslation();
+      }
     }
 
     async function pasteFromClipboard() {
@@ -1471,6 +1709,7 @@
           document.getElementById("transInputText").value = text;
           updateCharCount();
           showToast("Pasted from clipboard");
+          performTranslation();
         }
       } catch (err) {
         alert("Clipboard permission needed to paste directly.");
@@ -1493,23 +1732,107 @@
       }
     }
 
+    async function exportTransTxt() {
+      const text = document.getElementById("transOutputText").value;
+      if (!text) {
+        showToast("No translation to export.");
+        return;
+      }
+      const tgtLang = document.getElementById("transTargetSelect").value;
+      const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `translation_${tgtLang}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      showToast("Downloaded translation as TXT");
+    }
+
+    // 1-Click Bridge from STT Studio to Translator
+    function sendToTranslator() {
+      const text = (currentSttResult && currentSttResult.text) ? currentSttResult.text : document.getElementById("sttTextView").innerText.trim();
+      if (!text || text === "(No speech detected)") {
+        showToast("Please transcribe an audio file first.");
+        return;
+      }
+
+      // Switch view
+      switchNav("translator");
+
+      // Transfer text
+      const inputEl = document.getElementById("transInputText");
+      inputEl.value = text;
+      updateCharCount();
+
+      // Ensure target is Hindi
+      setTargetLang("hin_Deva");
+      setSourceLang("auto");
+
+      // Execute translation automatically
+      showToast("Transcript transferred to Translator!");
+      performTranslation();
+    }
+
+    // Neural Translation Execution
     async function performTranslation() {
       const input = document.getElementById("transInputText").value.trim();
       if (!input) {
-        alert("Please enter text to translate.");
+        showToast("Please enter text to translate.");
         return;
       }
 
       const statusEl = document.getElementById("transOutputStatus");
-      statusEl.innerText = "Translating...";
+      const outputEl = document.getElementById("transOutputText");
+      const btn = document.getElementById("btnTranslateAction");
 
-      // For now, prepare target translation presentation
-      setTimeout(() => {
-        document.getElementById("transOutputText").value = input; // Placeholder for translation engine
-        statusEl.innerText = "Complete";
-        showToast("Translation complete");
-      }, 300);
+      statusEl.innerText = "⏳ Translating on RTX 4060...";
+      if (btn) btn.disabled = true;
+
+      try {
+        const src = document.getElementById("transSourceSelect").value;
+        const tgt = document.getElementById("transTargetSelect").value;
+
+        const response = await fetch("/api/translate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: input,
+            source_lang: src,
+            target_lang: tgt,
+          }),
+        });
+
+        const data = await response.json();
+        if (response.ok && data.success) {
+          outputEl.value = data.translated_text;
+          statusEl.innerHTML = `⚡ ${data.latency}s &bull; CUDA float16`;
+          showToast("Translation complete!");
+        } else {
+          statusEl.innerText = "Translation error";
+          showToast("Translation error: " + (data.detail || data.error || "Failed"));
+        }
+      } catch (err) {
+        statusEl.innerText = "Connection error";
+        showToast("Could not reach translation server.");
+      } finally {
+        if (btn) btn.disabled = false;
+      }
     }
+
+    // Keyboard shortcut: Ctrl + Enter to translate
+    document.addEventListener("DOMContentLoaded", () => {
+      const textarea = document.getElementById("transInputText");
+      if (textarea) {
+        textarea.addEventListener("keydown", (e) => {
+          if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+            e.preventDefault();
+            performTranslation();
+          }
+        });
+      }
+    });
 
     // Helpers
     function formatBytes(bytes) {
