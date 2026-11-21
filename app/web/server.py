@@ -1,24 +1,23 @@
 """
-Friday Web Studio Server.
-Local, privacy-first, offline web server for audio/video transcription and translation.
+Friday Web Studio — FastAPI Backend.
+High-performance, local, privacy-first web application for audio/video transcription and translation.
 Powered by NVIDIA RTX 4060 GPU (CUDA float16) via Faster-Whisper.
 Runs on http://127.0.0.1:8765
 """
-import cgi
-import io
-import json
-import mimetypes
 import os
-import re
 import sys
 import tempfile
 import threading
 import time
-import urllib.parse
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Any, Dict, List, Optional, Tuple
+import webbrowser
+from typing import Any, Dict, List, Optional
 
 import pyperclip
+import uvicorn
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, Response
+from pydantic import BaseModel
 
 from app.core.formatters import segments_to_srt, segments_to_txt, segments_to_vtt
 from app.core.whisper_engine import WhisperEngine
@@ -45,279 +44,196 @@ def get_web_engine(model_name: str = "large-v3-turbo") -> WhisperEngine:
             )
             _global_engine.load_model()
         elif _global_engine.model_name != model_name:
-            print(f"[WebStudio] Switching engine model from {_global_engine.model_name} to {model_name}...")
+            print(f"[FastAPI WebStudio] Switching engine model from {_global_engine.model_name} to {model_name}...")
             _global_engine.load_model(model_name)
         return _global_engine
 
 
-def parse_multipart_form_data(
-    body: bytes, boundary: str
-) -> Tuple[Dict[str, str], Optional[Tuple[str, bytes]]]:
+# Pydantic Request Models
+class CopyRequest(BaseModel):
+    text: str
+
+
+class ExportRequest(BaseModel):
+    segments: List[Dict[str, Any]] = []
+    format: str = "txt"  # "txt", "srt", "vtt"
+    filename: str = "transcript"
+
+
+class TextTranslateRequest(BaseModel):
+    text: str
+    source_lang: str = "auto"
+    target_lang: str = "en"
+
+
+# FastAPI Application Instance
+app = FastAPI(
+    title="Friday AI Web Studio",
+    description="Offline Speech-to-Text & Neural Audio Translation powered by NVIDIA CUDA",
+    version="2.0.0",
+)
+
+# Enable CORS for local origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/", response_class=FileResponse)
+async def serve_index():
+    """Serve the primary Friday Studio single-page application."""
+    if not os.path.exists(HTML_FILE):
+        raise HTTPException(status_code=404, detail="index.html not found")
+    return FileResponse(HTML_FILE, media_type="text/html")
+
+
+@app.get("/favicon.ico")
+async def favicon():
+    """Handle browser favicon requests gracefully."""
+    return Response(status_code=204)
+
+
+@app.get("/api/status")
+async def get_status():
+    """Query current GPU acceleration status and loaded Whisper model."""
+    engine = get_web_engine()
+    return {
+        "status": "ready" if engine.is_ready else "loading",
+        "model": engine.model_name,
+        "device": engine.active_device,
+        "compute_type": engine.compute_type,
+        "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+        "supported_models": [
+            "large-v3-turbo",
+            "large-v3",
+            "medium",
+            "small",
+            "base",
+            "tiny",
+        ],
+    }
+
+
+@app.post("/api/transcribe")
+async def transcribe_media(
+    file: UploadFile = File(...),
+    task: str = Form("transcribe"),  # "transcribe" or "translate"
+    model: str = Form("large-v3-turbo"),
+    language: str = Form("auto"),
+):
     """
-    Robust pure-Python multipart/form-data parser.
-    Returns (form_fields_dict, (filename, file_bytes) or None).
+    Transcribe or translate an uploaded audio/video file using Faster-Whisper on RTX 4060.
+    Accepts MP3, WAV, M4A, MP4, FLAC, OGG, WEBM, AAC.
     """
-    fields: Dict[str, str] = {}
-    file_info: Optional[Tuple[str, bytes]] = None
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No file uploaded")
 
-    boundary_bytes = ("--" + boundary).encode("latin-1")
-    parts = body.split(boundary_bytes)
+    _, ext = os.path.splitext(file.filename)
+    if not ext:
+        ext = ".mp3"
 
-    for part in parts:
-        if not part or part == b"--\r\n" or part == b"--" or part.startswith(b"--"):
-            continue
+    temp_path = None
+    try:
+        # Stream uploaded chunks to temporary file
+        with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
+            temp_path = tmp.name
+            while chunk := await file.read(1024 * 1024):  # 1MB chunks
+                tmp.write(chunk)
 
-        # Split headers and body
-        if b"\r\n\r\n" not in part:
-            continue
-        raw_headers, content = part.split(b"\r\n\r\n", 1)
-        # Trim trailing \r\n from content
-        if content.endswith(b"\r\n"):
-            content = content[:-2]
+        engine = get_web_engine(model)
+        print(f"[FastAPI WebStudio] Processing '{file.filename}' ({task}) using model '{engine.model_name}' on {engine.active_device}...")
 
-        headers_str = raw_headers.decode("latin-1", errors="replace")
-        disp_match = re.search(r'Content-Disposition:\s*form-data;\s*name="([^"]+)"(?:;\s*filename="([^"]+)")?', headers_str, re.IGNORECASE)
-        if not disp_match:
-            continue
+        result = engine.transcribe_file(
+            file_path=temp_path,
+            task=task,
+            language=None if language == "auto" else language,
+        )
 
-        field_name = disp_match.group(1)
-        filename = disp_match.group(2)
+        result["filename"] = file.filename
+        return result
 
-        if filename:
-            file_info = (filename, content)
-        else:
-            fields[field_name] = content.decode("utf-8", errors="replace")
-
-    return fields, file_info
-
-
-class WebStudioHandler(BaseHTTPRequestHandler):
-    def log_message(self, format, *args):
-        # Keep console output clean and safe
-        try:
-            sys.stderr.write(f"[WebStudio] {format % args}\n")
-        except Exception:
-            sys.stderr.write(f"[WebStudio] {' '.join(str(a) for a in args)}\n")
-
-    def _send_json(self, status_code: int, data: Dict[str, Any]):
-        response_bytes = json.dumps(data).encode("utf-8")
-        self.send_response(status_code)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(response_bytes)))
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.end_headers()
-        self.wfile.write(response_bytes)
-
-    def do_OPTIONS(self):
-        self.send_response(204)
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
-        self.end_headers()
-
-    def do_GET(self):
-        parsed = urllib.parse.urlparse(self.path)
-        path = parsed.path
-
-        if path in ["/", "/index.html"]:
-            if not os.path.exists(HTML_FILE):
-                self.send_error(404, "index.html not found")
-                return
-            with open(HTML_FILE, "rb") as f:
-                content = f.read()
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.send_header("Content-Length", str(len(content)))
-            self.end_headers()
-            self.wfile.write(content)
-            return
-
-        if path == "/api/status":
-            engine = get_web_engine()
-            self._send_json(200, {
-                "status": "ready" if engine.is_ready else "loading",
-                "model": engine.model_name,
-                "device": engine.active_device,
-                "compute_type": engine.compute_type,
-                "supported_models": [
-                    "large-v3-turbo",
-                    "large-v3",
-                    "medium",
-                    "small",
-                    "base",
-                    "tiny",
-                ],
-                "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
-            })
-            return
-
-        if path == "/favicon.ico":
-            self.send_response(204)
-            self.end_headers()
-            return
-
-        # Serve other static files if any
-        local_path = os.path.join(STATIC_DIR, path.lstrip("/"))
-        if os.path.isfile(local_path):
-            mime_type, _ = mimetypes.guess_type(local_path)
-            with open(local_path, "rb") as f:
-                content = f.read()
-            self.send_response(200)
-            self.send_header("Content-Type", mime_type or "application/octet-stream")
-            self.send_header("Content-Length", str(len(content)))
-            self.end_headers()
-            self.wfile.write(content)
-            return
-
-        self.send_error(404, "Endpoint not found")
-
-    def do_POST(self):
-        parsed = urllib.parse.urlparse(self.path)
-        path = parsed.path
-
-        if path == "/api/copy":
-            content_length = int(self.headers.get("Content-Length", 0))
-            body = self.rfile.read(content_length).decode("utf-8", errors="replace")
+    except Exception as e:
+        print(f"[FastAPI WebStudio] Transcription error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if temp_path and os.path.exists(temp_path):
             try:
-                data = json.loads(body)
-                text_to_copy = data.get("text", "")
-                if text_to_copy:
-                    pyperclip.copy(text_to_copy)
-                    self._send_json(200, {"success": True, "message": "Copied to clipboard"})
-                else:
-                    self._send_json(400, {"success": False, "error": "No text provided"})
-            except Exception as e:
-                self._send_json(500, {"success": False, "error": str(e)})
-            return
+                os.remove(temp_path)
+            except Exception:
+                pass
 
-        if path == "/api/export":
-            content_length = int(self.headers.get("Content-Length", 0))
-            body = self.rfile.read(content_length).decode("utf-8", errors="replace")
-            try:
-                data = json.loads(body)
-                segments = data.get("segments", [])
-                fmt = data.get("format", "txt").lower()
-                filename = data.get("filename", "transcript")
 
-                if fmt == "srt":
-                    content = segments_to_srt(segments)
-                    ext = "srt"
-                    mime = "text/plain; charset=utf-8"
-                elif fmt == "vtt":
-                    content = segments_to_vtt(segments)
-                    ext = "vtt"
-                    mime = "text/vtt; charset=utf-8"
-                else:
-                    content = segments_to_txt(segments)
-                    ext = "txt"
-                    mime = "text/plain; charset=utf-8"
+@app.post("/api/copy")
+async def copy_to_clipboard(payload: CopyRequest):
+    """Safely copy text into the Windows host clipboard."""
+    if not payload.text:
+        raise HTTPException(status_code=400, detail="No text provided")
+    try:
+        pyperclip.copy(payload.text)
+        return {"success": True, "message": "Copied to clipboard"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Clipboard error: {e}")
 
-                content_bytes = content.encode("utf-8")
-                self.send_response(200)
-                self.send_header("Content-Type", mime)
-                self.send_header("Content-Disposition", f'attachment; filename="{filename}.{ext}"')
-                self.send_header("Content-Length", str(len(content_bytes)))
-                self.end_headers()
-                self.wfile.write(content_bytes)
-            except Exception as e:
-                self._send_json(500, {"success": False, "error": str(e)})
-            return
 
-        if path == "/api/transcribe":
-            content_type = self.headers.get("Content-Type", "")
-            if "multipart/form-data" not in content_type:
-                self._send_json(400, {"success": False, "error": "Expected multipart/form-data"})
-                return
+@app.post("/api/export")
+async def export_transcript(payload: ExportRequest):
+    """Export segments into formatted TXT, SRT, or VTT files."""
+    fmt = payload.format.lower()
+    base_name = payload.filename or "transcript"
 
-            boundary_match = re.search(r'boundary=([^;]+)', content_type)
-            if not boundary_match:
-                self._send_json(400, {"success": False, "error": "Missing boundary in Content-Type"})
-                return
-            boundary = boundary_match.group(1).strip('"')
+    if fmt == "srt":
+        content = segments_to_srt(payload.segments)
+        ext = "srt"
+        mime = "text/plain; charset=utf-8"
+    elif fmt == "vtt":
+        content = segments_to_vtt(payload.segments)
+        ext = "vtt"
+        mime = "text/vtt; charset=utf-8"
+    else:
+        content = segments_to_txt(payload.segments)
+        ext = "txt"
+        mime = "text/plain; charset=utf-8"
 
-            content_length = int(self.headers.get("Content-Length", 0))
-            if content_length > 500 * 1024 * 1024:  # 500 MB limit
-                self._send_json(413, {"success": False, "error": "File too large (> 500MB)"})
-                return
-
-            raw_body = self.rfile.read(content_length)
-            fields, file_info = parse_multipart_form_data(raw_body, boundary)
-
-            if not file_info:
-                self._send_json(400, {"success": False, "error": "No file uploaded in form data"})
-                return
-
-            original_filename, file_bytes = file_info
-            task = fields.get("task", "transcribe")  # "transcribe" or "translate"
-            language = fields.get("language", "auto")
-            model_name = fields.get("model", "large-v3-turbo")
-
-            # Determine extension
-            _, ext = os.path.splitext(original_filename)
-            if not ext:
-                ext = ".mp3"
-
-            temp_path = None
-            try:
-                with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
-                    tmp.write(file_bytes)
-                    temp_path = tmp.name
-
-                engine = get_web_engine(model_name)
-                print(f"[WebStudio] Running {task} on '{original_filename}' ({len(file_bytes)} bytes) using {engine.model_name}...")
-
-                result = engine.transcribe_file(
-                    file_path=temp_path,
-                    task=task,
-                    language=None if language == "auto" else language,
-                )
-
-                result["filename"] = original_filename
-                self._send_json(200, result)
-
-            except Exception as e:
-                print(f"[WebStudio] Processing error: {e}")
-                self._send_json(500, {"success": False, "error": str(e)})
-            finally:
-                if temp_path and os.path.exists(temp_path):
-                    try:
-                        os.remove(temp_path)
-                    except Exception:
-                        pass
-            return
-
-        self.send_error(404, "Endpoint not found")
+    return Response(
+        content=content,
+        media_type=mime,
+        headers={"Content-Disposition": f'attachment; filename="{base_name}.{ext}"'},
+    )
 
 
 def start_server(port: int = 8765, open_browser: bool = True):
-    """Start the Friday Web Studio server."""
+    """Start the Friday Web Studio via Uvicorn."""
     os.makedirs(STATIC_DIR, exist_ok=True)
-    server_address = ("127.0.0.1", port)
-    httpd = ThreadingHTTPServer(server_address, WebStudioHandler)
     url = f"http://127.0.0.1:{port}"
 
     print("==============================================================")
-    print("   Friday Web Studio — Offline Audio Transcription & Translation")
+    print("   Friday Web Studio (FastAPI) — Local AI Studio")
     print("==============================================================")
+    print(f"   Framework:    FastAPI + Uvicorn")
     print(f"   Server URL:   {url}")
+    print(f"   API Docs:     {url}/docs")
     print(f"   Acceleration: NVIDIA RTX 4060 GPU (CUDA float16)")
     print("   To Stop:      Press Ctrl+C in this console")
     print("==============================================================")
 
     if open_browser:
         def _open():
-            time.sleep(1.0)
-            import webbrowser
+            time.sleep(1.2)
             webbrowser.open(url)
 
         threading.Thread(target=_open, daemon=True).start()
 
-    try:
-        httpd.serve_forever()
-    except KeyboardInterrupt:
-        print("\n[WebStudio] Stopping server...")
-    finally:
-        httpd.server_close()
+    uvicorn.run(
+        app,
+        host="127.0.0.1",
+        port=port,
+        log_level="info",
+        access_log=False,
+    )
 
 
 if __name__ == "__main__":

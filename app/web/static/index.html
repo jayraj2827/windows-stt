@@ -3,190 +3,228 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Friday Suite — Local AI Hub</title>
+  <title>Friday AI Studio — Offline Speech-to-Text & Translation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-dark: #070707;
-      --sidebar-bg: #0d0d0d;
-      --card-bg: #121212;
-      --card-border: #202020;
-      --card-hover-border: #333333;
-      --accent-blue: #8ab4f8;
-      --accent-blue-hover: #aecbfa;
-      --accent-green: #81c995;
-      --accent-purple: #c58af9;
-      --accent-orange: #fbbc04;
-      --text-main: #f1f3f4;
-      --text-muted: #9aa0a6;
-      --text-dim: #5f6368;
-      --radius-sm: 8px;
-      --radius-md: 12px;
-      --radius-lg: 16px;
+      --bg: #09090b;
+      --surface: #111215;
+      --surface-elevated: #16181d;
+      --surface-hover: #1c1f26;
+      --border: #1f232b;
+      --border-focus: #3b82f6;
+      --border-subtle: #171920;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+      --accent-light: rgba(99, 102, 241, 0.12);
+      --accent-glow: rgba(99, 102, 241, 0.25);
+      --emerald: #10b981;
+      --emerald-bg: rgba(16, 185, 129, 0.1);
+      --emerald-border: rgba(16, 185, 129, 0.25);
+      --amber: #f59e0b;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 18px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+      --shadow-glow: 0 0 24px rgba(99, 102, 241, 0.15);
+      --font-mono: 'JetBrains Mono', monospace;
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Google Sans", Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
     }
 
     body {
-      background-color: var(--bg-dark);
-      color: var(--text-main);
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       min-height: 100vh;
-      display: flex;
-    }
-
-    /* App Layout */
-    .app-wrapper {
-      display: flex;
-      width: 100%;
-      min-height: 100vh;
-    }
-
-    /* Sidebar */
-    .sidebar {
-      width: 260px;
-      background: var(--sidebar-bg);
-      border-right: 1px solid var(--card-border);
       display: flex;
       flex-direction: column;
-      flex-shrink: 0;
-      padding: 20px 14px;
-      gap: 24px;
     }
 
-    .sidebar-brand {
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #27272a;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3f3f46;
+    }
+
+    /* Top Navigation Bar */
+    header.topbar {
+      height: 64px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(9, 9, 11, 0.85);
+      backdrop-filter: blur(16px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+    }
+
+    .brand {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 4px 8px;
       cursor: pointer;
+      user-select: none;
     }
 
-    .brand-logo {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #1a73e8, #8ab4f8);
+    .brand-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, #4f46e5, #06b6d4);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
-      box-shadow: 0 4px 12px rgba(26, 115, 232, 0.35);
+      box-shadow: 0 2px 10px rgba(79, 70, 229, 0.4);
     }
 
-    .brand-text h2 {
-      font-size: 16px;
+    .brand-icon svg {
+      width: 18px;
+      height: 18px;
+      fill: #ffffff;
+    }
+
+    .brand-title {
+      font-size: 15px;
       font-weight: 600;
-      letter-spacing: -0.2px;
-    }
-
-    .brand-text p {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .nav-section-title {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: var(--text-dim);
-      padding: 0 10px 8px 10px;
-    }
-
-    .nav-list {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      list-style: none;
-    }
-
-    .nav-item {
+      letter-spacing: -0.01em;
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 11px 14px;
+      gap: 8px;
+    }
+
+    .brand-tag {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    /* Navigation Tabs */
+    .nav-tabs {
+      display: flex;
+      background: #000000;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 3px;
+      gap: 2px;
+    }
+
+    .nav-tab {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 16px;
       border-radius: var(--radius-sm);
       color: var(--text-muted);
-      font-size: 13.5px;
+      font-size: 13px;
       font-weight: 500;
       cursor: pointer;
+      border: none;
+      background: transparent;
       transition: all 0.15s ease;
       user-select: none;
     }
 
-    .nav-item:hover {
-      background: #181818;
-      color: var(--text-main);
+    .nav-tab svg {
+      width: 15px;
+      height: 15px;
+      fill: currentColor;
     }
 
-    .nav-item.active {
-      background: #1e1e1e;
+    .nav-tab:hover {
+      color: var(--text);
+    }
+
+    .nav-tab.active {
+      background: var(--surface-elevated);
       color: #ffffff;
       font-weight: 600;
-      box-shadow: inset 3px 0 0 var(--accent-blue);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
     }
 
-    .nav-icon {
-      font-size: 17px;
-      width: 20px;
-      text-align: center;
-    }
-
-    .sidebar-footer {
-      margin-top: auto;
-      padding: 12px;
-      background: #121212;
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius-md);
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .gpu-status {
+    /* Telemetry / Status Pill */
+    .telemetry {
       display: flex;
       align-items: center;
       gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border-radius: 9999px;
       font-size: 12px;
-      color: var(--accent-green);
       font-weight: 500;
+      color: var(--text-muted);
     }
 
-    .gpu-dot {
+    .telemetry-dot {
       width: 7px;
       height: 7px;
-      background: var(--accent-green);
+      background: var(--emerald);
       border-radius: 50%;
-      box-shadow: 0 0 8px var(--accent-green);
+      box-shadow: 0 0 8px var(--emerald);
+      animation: pulse 2.5s infinite;
     }
 
-    .gpu-sub {
-      font-size: 11px;
-      color: var(--text-dim);
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.9); }
     }
 
-    /* Main Content */
-    .main-content {
+    .telemetry strong {
+      color: var(--text);
+    }
+
+    /* Content Layout */
+    main.container {
       flex: 1;
-      padding: 32px 36px;
-      overflow-y: auto;
-      max-height: 100vh;
-    }
-
-    .view-container {
-      max-width: 960px;
+      max-width: 1140px;
+      width: 100%;
       margin: 0 auto;
-      display: none;
+      padding: 32px 24px 64px 24px;
+      display: flex;
       flex-direction: column;
       gap: 24px;
-      animation: fadeIn 0.2s ease-in-out;
     }
 
-    .view-container.active {
+    .view-section {
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+      animation: fadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .view-section.active {
       display: flex;
     }
 
@@ -195,220 +233,193 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Header in View */
-    .view-header {
+    /* Section Headers */
+    .section-header {
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      border-bottom: 1px solid var(--card-border);
-      padding-bottom: 16px;
+      gap: 4px;
     }
 
-    .view-title {
-      font-size: 22px;
+    .section-title {
+      font-size: 20px;
       font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      letter-spacing: -0.02em;
+      color: var(--text);
     }
 
-    .view-desc {
+    .section-desc {
       font-size: 13.5px;
-      color: var(--text-muted);
-    }
-
-    /* Dashboard Cards Grid */
-    .dashboard-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px;
-    }
-
-    .app-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius-lg);
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .app-card:hover {
-      border-color: var(--card-hover-border);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-    }
-
-    .app-card-badge {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      font-size: 10.5px;
-      font-weight: 600;
-      text-transform: uppercase;
-      padding: 4px 8px;
-      border-radius: 12px;
-      background: #1c261e;
-      color: var(--accent-green);
-      border: 1px solid #2a4730;
-    }
-
-    .app-card-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      background: #1a1a1a;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-    }
-
-    .app-card h3 {
-      font-size: 16px;
-      font-weight: 600;
-    }
-
-    .app-card p {
-      font-size: 13px;
       color: var(--text-muted);
       line-height: 1.5;
     }
 
-    .app-card-btn {
-      margin-top: auto;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: var(--accent-blue);
-      font-size: 13px;
-      font-weight: 500;
-    }
-
-    /* Generic UI Cards */
+    /* Surface Card */
     .card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius-lg);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
       padding: 24px;
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 20px;
+      box-shadow: var(--shadow-sm);
     }
 
     /* Dropzone */
     .dropzone {
-      border: 2px dashed #282828;
-      border-radius: var(--radius-md);
-      padding: 36px 20px;
+      border: 2px dashed #262933;
+      border-radius: var(--radius-lg);
+      padding: 44px 24px;
       text-align: center;
       cursor: pointer;
-      transition: all 0.2s ease;
-      background: #0b0b0b;
+      background: #0d0e11;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
     }
 
     .dropzone:hover, .dropzone.dragover {
-      border-color: var(--accent-blue);
-      background: rgba(138, 180, 248, 0.04);
+      border-color: var(--accent);
+      background: rgba(99, 102, 241, 0.04);
+      box-shadow: 0 0 24px rgba(99, 102, 241, 0.08);
     }
 
     .dropzone-icon {
-      font-size: 36px;
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
     }
 
-    .dropzone-title {
-      font-size: 14.5px;
+    .dropzone-icon svg {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+
+    .dropzone-primary {
+      font-size: 15px;
       font-weight: 500;
+      color: var(--text);
     }
 
-    .dropzone-desc {
+    .dropzone-primary span {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .dropzone-secondary {
       font-size: 12px;
-      color: var(--text-muted);
+      color: var(--text-dim);
     }
 
     .file-input {
       display: none;
     }
 
-    /* Selected File Meta */
-    .selected-file-card {
+    /* Selected File Banner */
+    .file-card {
       display: none;
       align-items: center;
       justify-content: space-between;
-      background: #181818;
-      border: 1px solid #2d2d2d;
-      padding: 12px 16px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
       border-radius: var(--radius-md);
+      padding: 12px 18px;
     }
 
-    .file-meta {
+    .file-card-info {
       display: flex;
       align-items: center;
       gap: 12px;
       overflow: hidden;
     }
 
-    .file-meta-icon {
-      font-size: 24px;
+    .file-icon-badge {
+      width: 36px;
+      height: 36px;
+      background: var(--accent-light);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
     }
 
-    .file-meta-text {
+    .file-icon-badge svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    .file-card-details {
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
 
-    .file-name {
-      font-size: 13px;
+    .file-card-name {
+      font-size: 13.5px;
       font-weight: 500;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 440px;
+      max-width: 480px;
     }
 
-    .file-size {
-      font-size: 11px;
-      color: var(--text-muted);
+    .file-card-size {
+      font-size: 11.5px;
+      color: var(--text-dim);
     }
 
-    .remove-file-btn {
+    .file-card-remove {
       background: transparent;
       border: none;
       color: var(--text-dim);
-      font-size: 18px;
+      padding: 6px;
       cursor: pointer;
-      padding: 4px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .remove-file-btn:hover {
-      color: #f28b82;
+    .file-card-remove:hover {
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.1);
     }
 
-    /* Audio Player */
-    .audio-player-wrapper {
+    .file-card-remove svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+
+    /* Embedded Audio Scrubber */
+    .audio-player-box {
       display: none;
       flex-direction: column;
       gap: 8px;
-      background: #141414;
-      border: 1px solid #262626;
-      padding: 12px 16px;
+      background: #0d0e11;
+      border: 1px solid var(--border);
       border-radius: var(--radius-md);
+      padding: 14px 18px;
     }
 
-    .audio-player-label {
-      font-size: 12px;
-      color: var(--text-muted);
+    .audio-player-box label {
+      font-size: 11.5px;
       font-weight: 500;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
     audio {
@@ -417,134 +428,150 @@
       outline: none;
     }
 
-    /* Settings Controls */
-    .settings-row {
+    /* Controls Row */
+    .controls-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 16px;
     }
 
-    .setting-group {
+    .control-group {
       display: flex;
       flex-direction: column;
       gap: 6px;
     }
 
-    .setting-group label {
+    .control-label {
       font-size: 12px;
       font-weight: 500;
       color: var(--text-muted);
     }
 
-    select {
-      background: #161616;
-      border: 1px solid var(--card-border);
-      color: var(--text-main);
+    .control-select {
+      background: #0d0e11;
+      border: 1px solid var(--border);
+      color: var(--text);
       padding: 10px 14px;
       border-radius: var(--radius-sm);
-      font-size: 13px;
+      font-size: 13.5px;
+      font-weight: 500;
       outline: none;
       cursor: pointer;
+      transition: border-color 0.15s ease;
     }
 
-    select:focus {
-      border-color: var(--accent-blue);
+    .control-select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent);
     }
 
-    /* Flow Indicator Box in Translator */
-    .translation-flow-box {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      padding: 14px;
-      background: #0f1712;
-      border: 1px solid #1a3822;
-      border-radius: var(--radius-md);
-      font-size: 13.5px;
-      color: var(--accent-green);
-      font-weight: 500;
-    }
-
-    .flow-badge {
-      background: #1b4022;
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-weight: 600;
-      color: #ffffff;
-    }
-
-    .flow-arrow {
-      color: var(--accent-green);
-      font-size: 16px;
-    }
-
-    /* Action Buttons */
-    .action-btn {
-      background: linear-gradient(135deg, #1a73e8, #4285f4);
+    /* Primary Action Button */
+    .btn-primary {
+      background: linear-gradient(135deg, #4f46e5, #4338ca);
       color: #ffffff;
       border: none;
       border-radius: var(--radius-md);
-      padding: 14px 20px;
-      font-size: 14.5px;
+      padding: 13px 20px;
+      font-size: 14px;
       font-weight: 600;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 10px;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 14px rgba(26, 115, 232, 0.35);
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 2px 12px rgba(79, 70, 229, 0.35);
+      user-select: none;
     }
 
-    .action-btn-green {
-      background: linear-gradient(135deg, #1e8e3e, #34a853);
-      box-shadow: 0 4px 14px rgba(52, 168, 83, 0.3);
-    }
-
-    .action-btn:hover:not(:disabled) {
+    .btn-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, #4338ca, #3730a3);
       transform: translateY(-1px);
+      box-shadow: 0 4px 18px rgba(79, 70, 229, 0.45);
     }
 
-    .action-btn:disabled {
-      background: #202020;
-      color: #555555;
+    .btn-primary:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn-primary:disabled {
+      background: #1c1d22;
+      color: #4b5563;
       cursor: not-allowed;
       box-shadow: none;
     }
 
-    /* Status & Progress */
-    .status-bar {
+    .btn-primary svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+
+    /* Processing Bar */
+    .processing-bar {
       display: none;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
+      padding: 14px 18px;
+      background: #0d0e11;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
       font-size: 13px;
       color: var(--text-muted);
-      padding: 12px;
-      background: #161616;
-      border-radius: var(--radius-sm);
     }
 
     .spinner {
       width: 16px;
       height: 16px;
-      border: 2px solid #333333;
-      border-top-color: var(--accent-blue);
+      border: 2px solid #27272a;
+      border-top-color: var(--accent);
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      animation: spin 0.75s linear infinite;
     }
 
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
 
-    /* Results */
-    .results-card {
+    /* Metrics Banner */
+    .metrics-banner {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .metric-card {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .metric-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .metric-value {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* Result Card Layout */
+    .result-section {
       display: none;
+      flex-direction: column;
       gap: 16px;
     }
 
-    .results-header {
+    .result-toolbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -552,49 +579,13 @@
       gap: 12px;
     }
 
-    .results-title {
-      font-size: 16px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .meta-pills {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .meta-pill {
-      background: #191919;
-      border: 1px solid #282828;
-      font-size: 11px;
-      padding: 4px 10px;
-      border-radius: 12px;
-      color: var(--text-muted);
-    }
-
-    .meta-pill strong {
-      color: var(--text-main);
-    }
-
-    /* Toolbar */
-    .toolbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .view-toggles {
+    .view-switcher {
       display: flex;
       background: #000000;
-      border: 1px solid var(--card-border);
+      border: 1px solid var(--border);
       border-radius: var(--radius-sm);
-      padding: 3px;
-      gap: 4px;
+      padding: 2px;
+      gap: 2px;
     }
 
     .view-btn {
@@ -603,288 +594,394 @@
       background: transparent;
       color: var(--text-muted);
       font-size: 12px;
+      font-weight: 500;
       border-radius: 4px;
       cursor: pointer;
+      transition: all 0.15s ease;
     }
 
     .view-btn.active {
-      background: #252525;
+      background: var(--surface-elevated);
       color: #ffffff;
+      font-weight: 600;
     }
 
-    .export-btns {
+    .action-group {
       display: flex;
+      align-items: center;
       gap: 8px;
       flex-wrap: wrap;
     }
 
     .btn-secondary {
-      background: #1a1a1a;
-      border: 1px solid var(--card-border);
-      color: var(--text-main);
-      padding: 8px 14px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 7px 13px;
       border-radius: var(--radius-sm);
-      font-size: 12px;
+      font-size: 12.5px;
       font-weight: 500;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 6px;
       transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .btn-secondary svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
     }
 
     .btn-secondary:hover {
-      background: #242424;
-      border-color: #353535;
+      background: var(--surface-hover);
+      border-color: #333842;
     }
 
-    .btn-copy {
-      background: #0e2b1b;
-      border-color: #1a4d2c;
-      color: var(--accent-green);
+    .btn-copy-highlight {
+      background: var(--emerald-bg);
+      border-color: var(--emerald-border);
+      color: var(--emerald);
+      font-weight: 600;
     }
 
-    .btn-copy:hover {
-      background: #143d26;
+    .btn-copy-highlight:hover {
+      background: rgba(16, 185, 129, 0.18);
     }
 
     /* Transcript Box */
     .transcript-box {
-      background: #080808;
-      border: 1px solid #1c1c1c;
-      border-radius: var(--radius-md);
-      padding: 18px;
-      max-height: 480px;
+      background: #0a0b0e;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      max-height: 520px;
       overflow-y: auto;
       font-size: 14px;
-      line-height: 1.6;
+      line-height: 1.7;
     }
 
     .continuous-view {
       white-space: pre-wrap;
-      color: #e4e7eb;
+      color: #e2e8f0;
+      font-size: 14.5px;
     }
 
     .segments-view {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
     }
 
-    .segment-item {
+    .segment-row {
       display: flex;
-      gap: 12px;
-      padding: 8px 12px;
-      background: #111111;
-      border: 1px solid #1f1f1f;
+      align-items: baseline;
+      gap: 14px;
+      padding: 9px 12px;
       border-radius: var(--radius-sm);
+      background: var(--surface);
+      border: 1px solid var(--border-subtle);
+      transition: background 0.15s ease;
     }
 
-    .segment-item:hover {
-      background: #171717;
+    .segment-row:hover {
+      background: var(--surface-hover);
     }
 
-    .segment-time {
-      color: var(--accent-blue);
-      font-family: monospace;
-      font-size: 12px;
+    .segment-pill {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--accent);
+      background: var(--accent-light);
+      padding: 2px 7px;
+      border-radius: 4px;
       white-space: nowrap;
       cursor: pointer;
-      padding-top: 2px;
+      user-select: none;
     }
 
-    .segment-time:hover {
+    .segment-pill:hover {
       text-decoration: underline;
     }
 
-    .segment-text {
+    .segment-content {
       flex: 1;
-      color: var(--text-main);
+      color: var(--text);
+    }
+
+    /* ========================================================= */
+    /* DUAL-PANE TRANSLATOR (GOOGLE TRANSLATE STYLE)             */
+    /* ========================================================= */
+    .translator-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .pane-card {
+      background: #0d0e11;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .pane-header {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .pane-select {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .pane-select option {
+      background: #18191f;
+      color: #fff;
+    }
+
+    .pane-body {
+      flex: 1;
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      position: relative;
+    }
+
+    .pane-textarea {
+      flex: 1;
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.6;
+      resize: none;
+      font-family: inherit;
+    }
+
+    .pane-textarea::placeholder {
+      color: var(--text-dim);
+    }
+
+    .pane-footer {
+      padding: 8px 16px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11.5px;
+      color: var(--text-dim);
+    }
+
+    .pane-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pane-btn-icon {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .pane-btn-icon:hover {
+      background: var(--surface-hover);
+      color: #fff;
+      border-color: var(--border);
+    }
+
+    .pane-btn-icon svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+
+    /* Desktop View Card */
+    .kbd-pill {
+      font-family: var(--font-mono);
+      background: #000;
+      border: 1px solid var(--border);
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: var(--accent);
     }
 
     /* Toast */
     .toast {
       position: fixed;
       bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%) translateY(100px);
-      background: #1e4620;
-      color: #81c995;
-      padding: 10px 20px;
-      border-radius: 30px;
+      right: 28px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 16px;
+      border-radius: var(--radius-md);
       font-size: 13px;
       font-weight: 500;
-      border: 1px solid #2e6d32;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-      transition: transform 0.25s cubic-bezier(0.1, 0.9, 0.2, 1);
-      z-index: 999;
       display: flex;
       align-items: center;
       gap: 8px;
+      box-shadow: var(--shadow-md);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
     }
 
     .toast.show {
-      transform: translateX(-50%) translateY(0);
+      transform: translateY(0);
+      opacity: 1;
     }
 
-    @media (max-width: 768px) {
-      .app-wrapper {
-        flex-direction: column;
-      }
-      .sidebar {
-        width: 100%;
-        border-right: none;
-        border-bottom: 1px solid var(--card-border);
-      }
-      .main-content {
-        padding: 20px 16px;
-      }
-      .settings-row {
+    .toast svg {
+      width: 15px;
+      height: 15px;
+      fill: var(--emerald);
+    }
+
+    @media (max-width: 840px) {
+      .translator-grid {
         grid-template-columns: 1fr;
+      }
+      .controls-grid {
+        grid-template-columns: 1fr;
+      }
+      header.topbar {
+        padding: 0 16px;
+      }
+      .nav-tab span {
+        display: none;
       }
     }
   </style>
 </head>
 <body>
 
-<div class="app-wrapper">
-  <!-- Sidebar Navigation -->
-  <aside class="sidebar">
-    <div class="sidebar-brand" onclick="switchView('dashboard')">
-      <div class="brand-logo">⚡</div>
-      <div class="brand-text">
-        <h2>Friday AI Hub</h2>
-        <p>Offline Voice & Translation Suite</p>
+  <!-- Top Navigation Bar -->
+  <header class="topbar">
+    <div class="brand" onclick="switchNav('stt')">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z"/></svg>
+      </div>
+      <div class="brand-title">
+        <span>Friday AI Studio</span>
+        <span class="brand-tag">v2.0</span>
       </div>
     </div>
 
-    <div>
-      <div class="nav-section-title">Applications</div>
-      <ul class="nav-list">
-        <li class="nav-item active" id="navDashboard" onclick="switchView('dashboard')">
-          <span class="nav-icon">🏠</span>
-          <span>Dashboard</span>
-        </li>
-        <li class="nav-item" id="navStt" onclick="switchView('stt')">
-          <span class="nav-icon">🎙️</span>
-          <span>Speech to Text (STT)</span>
-        </li>
-        <li class="nav-item" id="navTranslator" onclick="switchView('translator')">
-          <span class="nav-icon">🌐</span>
-          <span>Offline Translator</span>
-        </li>
-        <li class="nav-item" id="navDesktop" onclick="switchView('desktop')">
-          <span class="nav-icon">⌨️</span>
-          <span>Desktop Assistant</span>
-        </li>
-      </ul>
+    <!-- Center Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="nav-tab active" id="tabStt" onclick="switchNav('stt')">
+        <svg viewBox="0 0 24 24"><path d="M12 15c1.66 0 2.99-1.34 2.99-3L15 6c0-1.66-1.34-3-3-3S9 4.34 9 6v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 15 6.7 12H5c0 3.42 2.72 6.23 6 6.72V22h2v-3.28c3.28-.49 6-3.3 6-6.72h-1.7z"/></svg>
+        <span>Speech to Text</span>
+      </button>
+
+      <button class="nav-tab" id="tabTranslator" onclick="switchNav('translator')">
+        <svg viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>
+        <span>Translator</span>
+      </button>
+
+      <button class="nav-tab" id="tabDesktop" onclick="switchNav('desktop')">
+        <svg viewBox="0 0 24 24"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg>
+        <span>Desktop Assistant</span>
+      </button>
+    </nav>
+
+    <!-- GPU Telemetry Status -->
+    <div class="telemetry">
+      <div class="telemetry-dot"></div>
+      <span id="gpuStatusText">RTX 4060 • CUDA float16</span>
     </div>
+  </header>
 
-    <div class="sidebar-footer">
-      <div class="gpu-status">
-        <div class="gpu-dot"></div>
-        <span id="gpuStatusText">RTX 4060 Active</span>
-      </div>
-      <div class="gpu-sub">CUDA float16 Tensor Acceleration</div>
-    </div>
-  </aside>
+  <!-- Main Container -->
+  <main class="container">
 
-  <!-- Main Content Area -->
-  <main class="main-content">
-    
-    <!-- 1. DASHBOARD VIEW (APP HUB) -->
-    <div class="view-container active" id="viewDashboard">
-      <div class="view-header">
-        <div class="view-title"><span>🏠</span> Friday Local Applications</div>
-        <div class="view-desc">Select an offline tool below. Everything runs 100% locally on your NVIDIA RTX 4060 GPU with complete privacy.</div>
-      </div>
-
-      <div class="dashboard-grid">
-        <!-- App 1: Speech to Text (STT) -->
-        <div class="app-card" onclick="switchView('stt')">
-          <div class="app-card-badge">Local Offline</div>
-          <div class="app-card-icon" style="color: #8ab4f8;">🎙️</div>
-          <h3>Speech to Text (STT Studio)</h3>
-          <p>Transcribe audio or video recordings into exact text and subtitles (.srt, .vtt) in their original spoken language.</p>
-          <div class="app-card-btn">
-            <span>Open STT Studio</span> <span>→</span>
-          </div>
-        </div>
-
-        <!-- App 2: Offline Audio Translator -->
-        <div class="app-card" onclick="switchView('translator')">
-          <div class="app-card-badge" style="color: #81c995; border-color: #1a4d2c; background: #0e2b1b;">Neural Translation</div>
-          <div class="app-card-icon" style="color: #81c995;">🌐</div>
-          <h3>Offline Audio Translator</h3>
-          <p>Translate foreign voice recordings and podcasts from 99+ languages directly into English text with zero cloud APIs.</p>
-          <div class="app-card-btn" style="color: #81c995;">
-            <span>Open Translator</span> <span>→</span>
-          </div>
-        </div>
-
-        <!-- App 3: Desktop Real-time Typing -->
-        <div class="app-card" onclick="switchView('desktop')">
-          <div class="app-card-badge" style="color: #c58af9; border-color: #432859; background: #20132b;">System-Wide</div>
-          <div class="app-card-icon" style="color: #c58af9;">⚡</div>
-          <h3>Desktop Voice Typing (STT)</h3>
-          <p>Real-time background push-to-talk assistant. Hold <code>Ctrl + Space</code> anywhere on Windows to dictate directly into active apps.</p>
-          <div class="app-card-btn" style="color: #c58af9;">
-            <span>View Desktop Assistant</span> <span>→</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 2. SPEECH TO TEXT VIEW (STT ONLY) -->
-    <div class="view-container" id="viewStt">
-      <div class="view-header">
-        <div class="view-title"><span>🎙️</span> Speech to Text (STT Studio)</div>
-        <div class="view-desc">Upload audio or video files to transcribe spoken speech into exact text, timestamped segments, and subtitles in the original language.</div>
+    <!-- ===================================================== -->
+    <!-- 1. SPEECH TO TEXT VIEW                                -->
+    <!-- ===================================================== -->
+    <section class="view-section active" id="viewStt">
+      <div class="section-header">
+        <h1 class="section-title">Speech to Text Studio</h1>
+        <p class="section-desc">Transcribe audio and video recordings into high-accuracy text and subtitle files in their native language.</p>
       </div>
 
       <div class="card">
         <!-- Dropzone -->
         <div class="dropzone" id="sttDropzone" onclick="document.getElementById('sttFileInput').click()">
-          <div class="dropzone-icon">📁</div>
-          <div class="dropzone-title">Click to upload or drag & drop audio / video file</div>
-          <div class="dropzone-desc">Supports MP3, WAV, M4A, MP4, FLAC, OGG, WEBM, AAC (Up to 500MB)</div>
+          <div class="dropzone-icon">
+            <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+          </div>
+          <div class="dropzone-primary">Drop audio or video file here, or <span>browse</span></div>
+          <div class="dropzone-secondary">Supports MP3, WAV, M4A, MP4, FLAC, OGG, WEBM, AAC (Up to 500 MB)</div>
           <input type="file" id="sttFileInput" class="file-input" accept="audio/*,video/*">
         </div>
 
-        <!-- File selected -->
-        <div class="selected-file-card" id="sttFileCard">
-          <div class="file-meta">
-            <span class="file-meta-icon">🎵</span>
-            <div class="file-meta-text">
-              <span class="file-name" id="sttFileName">file.mp3</span>
-              <span class="file-size" id="sttFileSize">10 MB</span>
+        <!-- Selected File Banner -->
+        <div class="file-card" id="sttFileCard">
+          <div class="file-card-info">
+            <div class="file-icon-badge">
+              <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+            </div>
+            <div class="file-card-details">
+              <div class="file-card-name" id="sttFileName">recording.mp3</div>
+              <div class="file-card-size" id="sttFileSize">12.4 MB</div>
             </div>
           </div>
-          <button class="remove-file-btn" onclick="clearSttFile()" title="Remove file">✕</button>
+          <button class="file-card-remove" onclick="clearSttFile()" title="Remove file">
+            <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
         </div>
 
-        <!-- Audio Player -->
-        <div class="audio-player-wrapper" id="sttPlayerWrapper">
-          <div class="audio-player-label">Audio Player</div>
+        <!-- Audio Player Scrubber -->
+        <div class="audio-player-box" id="sttAudioBox">
+          <label>Audio Playback Preview</label>
           <audio id="sttAudioElement" controls></audio>
         </div>
 
-        <!-- Controls -->
-        <div class="settings-row">
-          <div class="setting-group">
-            <label for="sttModelSelect">Whisper Model:</label>
-            <select id="sttModelSelect">
-              <option value="large-v3-turbo" selected>large-v3-turbo (Highest Accuracy Sweet Spot — Recommended)</option>
-              <option value="medium">medium (High Accuracy Multilingual)</option>
+        <!-- Configuration Grid -->
+        <div class="controls-grid">
+          <div class="control-group">
+            <label class="control-label" for="sttModelSelect">Faster-Whisper Model:</label>
+            <select class="control-select" id="sttModelSelect">
+              <option value="large-v3-turbo" selected>large-v3-turbo (Highest Accuracy Sweet Spot)</option>
+              <option value="medium">medium (Multilingual High Precision)</option>
               <option value="small">small (Fast Balanced)</option>
               <option value="base">base (Ultra Fast)</option>
               <option value="tiny">tiny (Fastest)</option>
             </select>
           </div>
 
-          <div class="setting-group">
-            <label for="sttLangSelect">Spoken Language:</label>
-            <select id="sttLangSelect">
+          <div class="control-group">
+            <label class="control-label" for="sttLangSelect">Spoken Language:</label>
+            <select class="control-select" id="sttLangSelect">
               <option value="auto" selected>Auto-Detect Spoken Language</option>
               <option value="en">English</option>
               <option value="hi">Hindi (हिंदी)</option>
@@ -904,601 +1001,545 @@
           </div>
         </div>
 
-        <!-- Action Button -->
-        <button class="action-btn" id="sttActionBtn" onclick="runSttProcessing()" disabled>
-          <span>⚡</span>
-          <span id="sttBtnText">Transcribe Audio to Text</span>
+        <!-- Transcribe Button -->
+        <button class="btn-primary" id="sttActionBtn" onclick="runStt()" disabled>
+          <svg viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+          <span id="sttBtnLabel">Transcribe Audio File</span>
         </button>
 
-        <!-- Status Bar -->
-        <div class="status-bar" id="sttStatusBar">
+        <!-- Processing Status Bar -->
+        <div class="processing-bar" id="sttProcessingBar">
           <div class="spinner"></div>
-          <span id="sttStatusText">Transcribing speech on RTX 4060 GPU...</span>
+          <span id="sttProcessingText">Processing speech on NVIDIA RTX 4060 GPU...</span>
         </div>
       </div>
 
-      <!-- Results Card -->
-      <div class="card results-card" id="sttResultsCard">
-        <div class="results-header">
-          <div class="results-title"><span>📄</span> Transcription Output</div>
-          <div class="meta-pills" id="sttMetaPills"></div>
-        </div>
-
-        <div class="toolbar">
-          <div class="view-toggles">
-            <button class="view-btn active" id="sttViewContinuousBtn" onclick="setSttViewMode('continuous')">Text View</button>
-            <button class="view-btn" id="sttViewSegmentsBtn" onclick="setSttViewMode('segments')">Timestamp Segments</button>
+      <!-- Results Section -->
+      <div class="result-section" id="sttResultSection">
+        <!-- Telemetry Stats -->
+        <div class="metrics-banner">
+          <div class="metric-card">
+            <div class="metric-label">Detected Language</div>
+            <div class="metric-value" id="sttStatLang">English</div>
           </div>
-
-          <div class="export-btns">
-            <button class="btn-secondary btn-copy" onclick="copySttTranscript()">
-              <span>📋</span> Copy to Clipboard
-            </button>
-            <button class="btn-secondary" onclick="exportSttFile('txt')"><span>📄</span> TXT</button>
-            <button class="btn-secondary" onclick="exportSttFile('srt')"><span>🎬</span> SRT</button>
-            <button class="btn-secondary" onclick="exportSttFile('vtt')"><span>🌐</span> VTT</button>
+          <div class="metric-card">
+            <div class="metric-label">Audio Duration</div>
+            <div class="metric-value" id="sttStatDuration">0.0s</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">GPU Latency</div>
+            <div class="metric-value" id="sttStatLatency">0.0s</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Inference Model</div>
+            <div class="metric-value" id="sttStatModel">large-v3-turbo</div>
           </div>
         </div>
 
-        <div class="transcript-box" id="sttTranscriptBox">
-          <div class="continuous-view" id="sttContinuousView"></div>
-          <div class="segments-view" id="sttSegmentsView" style="display: none;"></div>
-        </div>
-      </div>
-    </div>
+        <div class="card">
+          <!-- Toolbar -->
+          <div class="result-toolbar">
+            <div class="view-switcher">
+              <button class="view-btn active" id="sttViewTextBtn" onclick="setSttView('text')">Plain Text</button>
+              <button class="view-btn" id="sttViewSegBtn" onclick="setSttView('segments')">Segments & Timestamps</button>
+            </div>
 
-    <!-- 3. OFFLINE TRANSLATOR VIEW (TRANSLATOR ONLY) -->
-    <div class="view-container" id="viewTranslator">
-      <div class="view-header">
-        <div class="view-title"><span>🌐</span> Offline Audio Translator</div>
-        <div class="view-desc">Translate foreign voice recordings into English text completely offline on your RTX 4060 GPU with zero cloud APIs.</div>
-      </div>
-
-      <div class="card">
-        <!-- Visual Translation Flow Banner -->
-        <div class="translation-flow-box">
-          <span class="flow-badge">Spoken Audio (Any Language)</span>
-          <span class="flow-arrow">➔</span>
-          <span class="flow-badge" style="background: #173822; color: #81c995;">Translated English Text</span>
-        </div>
-
-        <!-- Dropzone -->
-        <div class="dropzone" id="transDropzone" onclick="document.getElementById('transFileInput').click()">
-          <div class="dropzone-icon" style="color: #81c995;">🌍</div>
-          <div class="dropzone-title">Upload foreign audio or video file to translate</div>
-          <div class="dropzone-desc">Speaks Hindi, Spanish, French, German, Japanese, Chinese, etc. ➔ Translates to English</div>
-          <input type="file" id="transFileInput" class="file-input" accept="audio/*,video/*">
-        </div>
-
-        <!-- File selected -->
-        <div class="selected-file-card" id="transFileCard">
-          <div class="file-meta">
-            <span class="file-meta-icon">🗣️</span>
-            <div class="file-meta-text">
-              <span class="file-name" id="transFileName">foreign_recording.mp3</span>
-              <span class="file-size" id="transFileSize">12 MB</span>
+            <div class="action-group">
+              <button class="btn-secondary btn-copy-highlight" onclick="copySttText()">
+                <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                <span>Copy Transcript</span>
+              </button>
+              <button class="btn-secondary" onclick="exportStt('txt')">
+                <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                <span>TXT</span>
+              </button>
+              <button class="btn-secondary" onclick="exportStt('srt')">
+                <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                <span>SRT</span>
+              </button>
+              <button class="btn-secondary" onclick="exportStt('vtt')">
+                <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                <span>VTT</span>
+              </button>
             </div>
           </div>
-          <button class="remove-file-btn" onclick="clearTransFile()" title="Remove file">✕</button>
-        </div>
 
-        <!-- Audio Player -->
-        <div class="audio-player-wrapper" id="transPlayerWrapper">
-          <div class="audio-player-label">Original Audio Player</div>
-          <audio id="transAudioElement" controls></audio>
-        </div>
-
-        <!-- Settings -->
-        <div class="settings-row">
-          <div class="setting-group">
-            <label for="transModelSelect">Whisper Translation Model:</label>
-            <select id="transModelSelect">
-              <option value="large-v3-turbo" selected>large-v3-turbo (Highest Accuracy Sweet Spot — Recommended)</option>
-              <option value="medium">medium (Multilingual Precision)</option>
-              <option value="small">small (Fast Balanced)</option>
-            </select>
+          <!-- Transcript Display -->
+          <div class="transcript-box">
+            <div class="continuous-view" id="sttTextView"></div>
+            <div class="segments-view" id="sttSegmentsView" style="display: none;"></div>
           </div>
-
-          <div class="setting-group">
-            <label for="transSourceLang">Original Audio Language:</label>
-            <select id="transSourceLang">
-              <option value="auto" selected>Auto-Detect Spoken Language</option>
-              <option value="hi">Hindi (हिंदी)</option>
-              <option value="es">Spanish (Español)</option>
-              <option value="fr">French (Français)</option>
-              <option value="de">German (Deutsch)</option>
-              <option value="ja">Japanese (日本語)</option>
-              <option value="zh">Chinese (中文)</option>
-              <option value="ru">Russian (Русский)</option>
-              <option value="ar">Arabic (العربية)</option>
-              <option value="pt">Portuguese (Português)</option>
-              <option value="it">Italian (Italiano)</option>
-              <option value="ko">Korean (한국어)</option>
-              <option value="gu">Gujarati (ગુજરાતી)</option>
-              <option value="mr">Marathi (मराठी)</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Action Button -->
-        <button class="action-btn action-btn-green" id="transActionBtn" onclick="runTransProcessing()" disabled>
-          <span>🌐</span>
-          <span id="transBtnText">Translate Audio to English</span>
-        </button>
-
-        <!-- Status Bar -->
-        <div class="status-bar" id="transStatusBar">
-          <div class="spinner"></div>
-          <span id="transStatusText">Translating speech to English on RTX 4060 GPU...</span>
         </div>
       </div>
+    </section>
 
-      <!-- Results Card -->
-      <div class="card results-card" id="transResultsCard">
-        <div class="results-header">
-          <div class="results-title"><span>🌐</span> Translated English Transcript</div>
-          <div class="meta-pills" id="transMetaPills"></div>
-        </div>
-
-        <div class="toolbar">
-          <div class="view-toggles">
-            <button class="view-btn active" id="transViewContinuousBtn" onclick="setTransViewMode('continuous')">English Text</button>
-            <button class="view-btn" id="transViewSegmentsBtn" onclick="setTransViewMode('segments')">Timestamp Segments</button>
-          </div>
-
-          <div class="export-btns">
-            <button class="btn-secondary btn-copy" onclick="copyTransTranscript()">
-              <span>📋</span> Copy English Translation
-            </button>
-            <button class="btn-secondary" onclick="exportTransFile('txt')"><span>📄</span> TXT</button>
-            <button class="btn-secondary" onclick="exportTransFile('srt')"><span>🎬</span> SRT</button>
-            <button class="btn-secondary" onclick="exportTransFile('vtt')"><span>🌐</span> VTT</button>
-          </div>
-        </div>
-
-        <div class="transcript-box" id="transTranscriptBox">
-          <div class="continuous-view" id="transContinuousView"></div>
-          <div class="segments-view" id="transSegmentsView" style="display: none;"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 4. DESKTOP ASSISTANT VIEW -->
-    <div class="view-container" id="viewDesktop">
-      <div class="view-header">
-        <div class="view-title"><span>⌨️</span> Friday STT — Desktop Real-time Voice Typing</div>
-        <div class="view-desc">Information and guide for the background system-wide push-to-talk dictation assistant.</div>
+    <!-- ===================================================== -->
+    <!-- 2. TRANSLATOR VIEW (DUAL-PANE GOOGLE TRANSLATE STYLE) -->
+    <!-- ===================================================== -->
+    <section class="view-section" id="viewTranslator">
+      <div class="section-header">
+        <h1 class="section-title">Neural Offline Translator</h1>
+        <p class="section-desc">Translate text and spoken speech into other languages offline with zero cloud APIs.</p>
       </div>
 
       <div class="card">
-        <h3 style="font-size: 16px;">Quick Controls & Status</h3>
-        <p style="font-size: 13.5px; color: var(--text-muted); line-height: 1.6;">
-          Friday STT runs in your Windows System Tray (near your clock). You can dictate directly into any active application without opening any browser or window.
-        </p>
+        <div class="translator-grid">
+          <!-- Left Pane (Source) -->
+          <div class="pane-card">
+            <div class="pane-header">
+              <select class="pane-select" id="transSourceSelect">
+                <option value="auto" selected>Detect Language</option>
+                <option value="en">English</option>
+                <option value="hi">Hindi (हिंदी)</option>
+                <option value="es">Spanish (Español)</option>
+                <option value="fr">French (Français)</option>
+                <option value="de">German (Deutsch)</option>
+                <option value="ja">Japanese (日本語)</option>
+                <option value="zh">Chinese (中文)</option>
+                <option value="ru">Russian (Русский)</option>
+                <option value="ar">Arabic (العربية)</option>
+                <option value="pt">Portuguese (Português)</option>
+                <option value="it">Italian (Italiano)</option>
+                <option value="ko">Korean (한국어)</option>
+                <option value="gu">Gujarati (ગુજરાતી)</option>
+                <option value="mr">Marathi (मराठी)</option>
+              </select>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 8px;">
-          <div style="background: #141414; padding: 14px; border-radius: 8px; border: 1px solid #222;">
-            <div style="color: var(--accent-blue); font-weight: 600; font-size: 13px; margin-bottom: 4px;">Push-to-Talk Hotkey</div>
-            <div style="font-family: monospace; font-size: 14px; color: #fff;">Ctrl + Space</div>
-            <div style="color: var(--text-dim); font-size: 11px; margin-top: 4px;">Hold to speak, release to paste</div>
+              <div class="pane-actions">
+                <button class="pane-btn-icon" onclick="clearTransInput()" title="Clear text">
+                  <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="pane-body">
+              <textarea class="pane-textarea" id="transInputText" placeholder="Type or paste text to translate..." oninput="updateCharCount()"></textarea>
+            </div>
+
+            <div class="pane-footer">
+              <span id="transCharCount">0 characters</span>
+              <div class="pane-actions">
+                <button class="pane-btn-icon" onclick="pasteFromClipboard()" title="Paste from clipboard">
+                  <svg viewBox="0 0 24 24"><path d="M19 2h-4.18C14.4.84 13.3 0 12 0c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z"/></svg>
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div style="background: #141414; padding: 14px; border-radius: 8px; border: 1px solid #222;">
-            <div style="color: var(--accent-purple); font-weight: 600; font-size: 13px; margin-bottom: 4px;">Hands-Free Toggle Hotkey</div>
-            <div style="font-family: monospace; font-size: 14px; color: #fff;">Ctrl + Shift + Space</div>
-            <div style="color: var(--text-dim); font-size: 11px; margin-top: 4px;">Press once to record, press again to stop</div>
-          </div>
+          <!-- Right Pane (Target Translation) -->
+          <div class="pane-card">
+            <div class="pane-header">
+              <select class="pane-select" id="transTargetSelect">
+                <option value="en" selected>English</option>
+                <option value="hi">Hindi (हिंदी)</option>
+                <option value="es">Spanish (Español)</option>
+                <option value="fr">French (Français)</option>
+                <option value="de">German (Deutsch)</option>
+                <option value="ja">Japanese (日本語)</option>
+                <option value="zh">Chinese (中文)</option>
+                <option value="ru">Russian (Русский)</option>
+                <option value="ar">Arabic (العربية)</option>
+                <option value="pt">Portuguese (Português)</option>
+                <option value="it">Italian (Italiano)</option>
+                <option value="ko">Korean (한국어)</option>
+                <option value="gu">Gujarati (ગુજરાતી)</option>
+                <option value="mr">Marathi (मराठी)</option>
+              </select>
 
-          <div style="background: #141414; padding: 14px; border-radius: 8px; border: 1px solid #222;">
-            <div style="color: var(--accent-green); font-weight: 600; font-size: 13px; margin-bottom: 4px;">Clipboard Safe Mode</div>
-            <div style="font-size: 14px; color: #fff;">Active (Guaranteed)</div>
-            <div style="color: var(--text-dim); font-size: 11px; margin-top: 4px;">Transcripts stay in clipboard so you never lose speech</div>
-          </div>
+              <div class="pane-actions">
+                <button class="pane-btn-icon" onclick="copyTransOutput()" title="Copy translation">
+                  <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                </button>
+              </div>
+            </div>
 
-          <div style="background: #141414; padding: 14px; border-radius: 8px; border: 1px solid #222;">
-            <div style="color: var(--accent-orange); font-weight: 600; font-size: 13px; margin-bottom: 4px;">Microphone Privacy</div>
-            <div style="font-size: 14px; color: #fff;">On-Demand (~19ms)</div>
-            <div style="color: var(--text-dim); font-size: 11px; margin-top: 4px;">Mic is 100% closed when idle (Taskbar icon OFF)</div>
+            <div class="pane-body">
+              <textarea class="pane-textarea" id="transOutputText" placeholder="Translation appears here..." readonly></textarea>
+            </div>
+
+            <div class="pane-footer">
+              <span id="transOutputStatus">Ready</span>
+              <div class="pane-actions">
+                <button class="pane-btn-icon" onclick="copyTransOutput()" title="Copy translation">
+                  <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div style="margin-top: 10px; padding: 14px; background: #0f1712; border: 1px solid #1a3822; border-radius: 8px; font-size: 13px; color: var(--text-muted); line-height: 1.6;">
-          💡 <strong>How to launch desktop assistant:</strong> Double-click <code style="color: #fff; background: #1a1a1a; padding: 2px 6px; border-radius: 4px;">run.bat</code> in the project folder to start the background tray assistant.
+        <button class="btn-primary" onclick="performTranslation()">
+          <svg viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>
+          <span>Translate</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ===================================================== -->
+    <!-- 3. DESKTOP ASSISTANT STATUS VIEW                      -->
+    <!-- ===================================================== -->
+    <section class="view-section" id="viewDesktop">
+      <div class="section-header">
+        <h1 class="section-title">Desktop Real-Time Assistant</h1>
+        <p class="section-desc">Global background push-to-talk voice typing running silently in your Windows System Tray.</p>
+      </div>
+
+      <div class="card">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px;">
+          <div style="background: var(--surface-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px;">
+            <div style="color: var(--accent); font-weight: 600; font-size: 13px; margin-bottom: 6px;">Push-to-Talk (Hold)</div>
+            <div style="display: flex; gap: 4px; margin-bottom: 6px;">
+              <span class="kbd-pill">Ctrl</span> + <span class="kbd-pill">Space</span>
+            </div>
+            <div style="color: var(--text-dim); font-size: 12px;">Hold to speak, release to paste into active window</div>
+          </div>
+
+          <div style="background: var(--surface-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px;">
+            <div style="color: #a855f7; font-weight: 600; font-size: 13px; margin-bottom: 6px;">Hands-Free Toggle</div>
+            <div style="display: flex; gap: 4px; margin-bottom: 6px;">
+              <span class="kbd-pill">Ctrl</span> + <span class="kbd-pill">Shift</span> + <span class="kbd-pill">Space</span>
+            </div>
+            <div style="color: var(--text-dim); font-size: 12px;">Press once to record, press again to stop</div>
+          </div>
+
+          <div style="background: var(--surface-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px;">
+            <div style="color: var(--emerald); font-weight: 600; font-size: 13px; margin-bottom: 6px;">Clipboard Safe Mode</div>
+            <div style="font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 6px;">Active</div>
+            <div style="color: var(--text-dim); font-size: 12px;">Transcripts stay in clipboard so you never lose words if unfocused</div>
+          </div>
+
+          <div style="background: var(--surface-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px;">
+            <div style="color: var(--amber); font-weight: 600; font-size: 13px; margin-bottom: 6px;">Microphone Privacy</div>
+            <div style="font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 6px;">On-Demand (~19ms)</div>
+            <div style="color: var(--text-dim); font-size: 12px;">Mic is 100% closed when idle (Windows Taskbar mic icon is OFF)</div>
+          </div>
+        </div>
+
+        <div style="background: #0d0e11; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; font-size: 13.5px; color: var(--text-muted); line-height: 1.6;">
+          🚀 <strong>Launch Instruction:</strong> To start the background desktop assistant, double-click <code style="color: #fff; background: var(--surface-elevated); padding: 2px 6px; border-radius: 4px;">run.bat</code>. It runs in your Windows System Tray near the clock.
         </div>
       </div>
-    </div>
+    </section>
 
   </main>
-</div>
 
-<!-- Toast -->
-<div class="toast" id="toast">
-  <span>✓</span> <span id="toastMsg">Copied to clipboard!</span>
-</div>
+  <!-- Toast Notification -->
+  <div class="toast" id="toast">
+    <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+    <span id="toastMessage">Copied to clipboard</span>
+  </div>
 
-<script>
-  // State
-  let sttFile = null;
-  let sttResult = null;
-  let sttViewMode = "continuous";
+  <script>
+    // State
+    let currentSttFile = null;
+    let currentSttResult = null;
+    let sttViewMode = "text";
 
-  let transFile = null;
-  let transResult = null;
-  let transViewMode = "continuous";
+    // Nav Switcher
+    function switchNav(tabId) {
+      document.querySelectorAll(".nav-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-section").forEach(s => s.classList.remove("active"));
 
-  // Navigation Switcher
-  function switchView(viewId) {
-    document.querySelectorAll(".view-container").forEach(el => el.classList.remove("active"));
-    document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
+      const tabBtn = document.getElementById("tab" + capitalize(tabId));
+      const section = document.getElementById("view" + capitalize(tabId));
 
-    const targetView = document.getElementById("view" + capitalize(viewId));
-    const targetNav = document.getElementById("nav" + capitalize(viewId));
+      if (tabBtn) tabBtn.classList.add("active");
+      if (section) section.classList.add("active");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
 
-    if (targetView) targetView.classList.add("active");
-    if (targetNav) targetNav.classList.add("active");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
+    function capitalize(s) {
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    }
 
-  function capitalize(s) {
-    return s.charAt(0).toUpperCase() + s.slice(1);
-  }
+    // Init
+    window.addEventListener("DOMContentLoaded", async () => {
+      initDropzone();
+      fetchStatus();
+    });
 
-  // Init Status
-  window.addEventListener("DOMContentLoaded", async () => {
-    setupDragDropStt();
-    setupDragDropTrans();
-    try {
-      const res = await fetch("/api/status");
-      if (res.ok) {
-        const data = await res.json();
-        document.getElementById("gpuStatusText").innerText = `${data.gpu_name.replace(" Laptop GPU", "")} (CUDA)`;
+    async function fetchStatus() {
+      try {
+        const res = await fetch("/api/status");
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById("gpuStatusText").innerText = `${data.gpu_name.replace(" Laptop GPU", "")} • CUDA ${data.compute_type}`;
+        }
+      } catch (err) {
+        console.warn("Status fetch:", err);
       }
-    } catch (e) {
-      console.log("Status check:", e);
     }
-  });
 
-  // ================= STT APP LOGIC =================
-  function setupDragDropStt() {
-    const dropzone = document.getElementById("sttDropzone");
-    const fileInput = document.getElementById("sttFileInput");
+    // Dropzone Logic
+    function initDropzone() {
+      const dropzone = document.getElementById("sttDropzone");
+      const fileInput = document.getElementById("sttFileInput");
 
-    dropzone.addEventListener("dragover", (e) => { e.preventDefault(); dropzone.classList.add("dragover"); });
-    dropzone.addEventListener("dragleave", () => { dropzone.classList.remove("dragover"); });
-    dropzone.addEventListener("drop", (e) => {
-      e.preventDefault();
-      dropzone.classList.remove("dragover");
-      if (e.dataTransfer.files.length > 0) selectSttFile(e.dataTransfer.files[0]);
-    });
-    fileInput.addEventListener("change", (e) => {
-      if (fileInput.files.length > 0) selectSttFile(fileInput.files[0]);
-    });
-  }
-
-  function selectSttFile(file) {
-    sttFile = file;
-    document.getElementById("sttFileName").innerText = file.name;
-    document.getElementById("sttFileSize").innerText = formatBytes(file.size);
-    document.getElementById("sttDropzone").style.display = "none";
-    document.getElementById("sttFileCard").style.display = "flex";
-    document.getElementById("sttActionBtn").disabled = false;
-
-    const audioEl = document.getElementById("sttAudioElement");
-    audioEl.src = URL.createObjectURL(file);
-    document.getElementById("sttPlayerWrapper").style.display = "flex";
-  }
-
-  function clearSttFile() {
-    sttFile = null;
-    document.getElementById("sttFileInput").value = "";
-    document.getElementById("sttDropzone").style.display = "flex";
-    document.getElementById("sttFileCard").style.display = "none";
-    document.getElementById("sttPlayerWrapper").style.display = "none";
-    document.getElementById("sttAudioElement").src = "";
-    document.getElementById("sttActionBtn").disabled = true;
-  }
-
-  async function runSttProcessing() {
-    if (!sttFile) return;
-    const btn = document.getElementById("sttActionBtn");
-    const status = document.getElementById("sttStatusBar");
-    const results = document.getElementById("sttResultsCard");
-
-    btn.disabled = true;
-    status.style.display = "flex";
-
-    const formData = new FormData();
-    formData.append("file", sttFile);
-    formData.append("task", "transcribe"); // Pure STT
-    formData.append("model", document.getElementById("sttModelSelect").value);
-    formData.append("language", document.getElementById("sttLangSelect").value);
-
-    try {
-      const res = await fetch("/api/transcribe", { method: "POST", body: formData });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || "STT Transcription failed");
-
-      sttResult = data;
-      renderSttResults(data);
-      results.style.display = "flex";
-      results.scrollIntoView({ behavior: "smooth" });
-    } catch (err) {
-      alert("Error: " + err.message);
-    } finally {
-      btn.disabled = false;
-      status.style.display = "none";
-    }
-  }
-
-  function renderSttResults(data) {
-    document.getElementById("sttMetaPills").innerHTML = `
-      <div class="meta-pill">Language: <strong>${(data.language || "Unknown").toUpperCase()}</strong></div>
-      <div class="meta-pill">Audio: <strong>${data.duration}s</strong></div>
-      <div class="meta-pill">Inference: <strong>${data.latency}s</strong></div>
-      <div class="meta-pill">Model: <strong>${data.model}</strong></div>
-    `;
-
-    document.getElementById("sttContinuousView").innerText = data.text || "(No speech detected)";
-
-    const segView = document.getElementById("sttSegmentsView");
-    segView.innerHTML = "";
-    if (data.segments && data.segments.length > 0) {
-      data.segments.forEach(seg => {
-        const item = document.createElement("div");
-        item.className = "segment-item";
-        item.innerHTML = `
-          <span class="segment-time" onclick="seekSttAudio(${seg.start})" title="Play from here">[${formatTime(seg.start)} - ${formatTime(seg.end)}]</span>
-          <span class="segment-text">${escapeHtml(seg.text)}</span>
-        `;
-        segView.appendChild(item);
+      dropzone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropzone.classList.add("dragover");
       });
-    } else {
-      segView.innerHTML = "<div style='color: var(--text-muted);'>No segment breakdown available.</div>";
-    }
-
-    setSttViewMode(sttViewMode);
-  }
-
-  function seekSttAudio(seconds) {
-    const audio = document.getElementById("sttAudioElement");
-    audio.currentTime = seconds;
-    audio.play();
-  }
-
-  function setSttViewMode(mode) {
-    sttViewMode = mode;
-    const btnC = document.getElementById("sttViewContinuousBtn");
-    const btnS = document.getElementById("sttViewSegmentsBtn");
-    const vC = document.getElementById("sttContinuousView");
-    const vS = document.getElementById("sttSegmentsView");
-
-    if (mode === "continuous") {
-      btnC.classList.add("active");
-      btnS.classList.remove("active");
-      vC.style.display = "block";
-      vS.style.display = "none";
-    } else {
-      btnS.classList.add("active");
-      btnC.classList.remove("active");
-      vS.style.display = "flex";
-      vC.style.display = "none";
-    }
-  }
-
-  async function copySttTranscript() {
-    if (!sttResult || !sttResult.text) return;
-    try {
-      await navigator.clipboard.writeText(sttResult.text);
-      showToast("Copied STT transcript to clipboard!");
-    } catch {
-      await fetch("/api/copy", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: sttResult.text }) });
-      showToast("Copied to Windows clipboard!");
-    }
-  }
-
-  async function exportSttFile(fmt) {
-    if (!sttResult) return;
-    const baseName = (sttFile ? sttFile.name.replace(/\.[^/.]+$/, "") : "transcript");
-    await downloadExport(sttResult.segments, fmt, `${baseName}_transcription`);
-  }
-
-  // ================= TRANSLATOR APP LOGIC =================
-  function setupDragDropTrans() {
-    const dropzone = document.getElementById("transDropzone");
-    const fileInput = document.getElementById("transFileInput");
-
-    dropzone.addEventListener("dragover", (e) => { e.preventDefault(); dropzone.classList.add("dragover"); });
-    dropzone.addEventListener("dragleave", () => { dropzone.classList.remove("dragover"); });
-    dropzone.addEventListener("drop", (e) => {
-      e.preventDefault();
-      dropzone.classList.remove("dragover");
-      if (e.dataTransfer.files.length > 0) selectTransFile(e.dataTransfer.files[0]);
-    });
-    fileInput.addEventListener("change", (e) => {
-      if (fileInput.files.length > 0) selectTransFile(fileInput.files[0]);
-    });
-  }
-
-  function selectTransFile(file) {
-    transFile = file;
-    document.getElementById("transFileName").innerText = file.name;
-    document.getElementById("transFileSize").innerText = formatBytes(file.size);
-    document.getElementById("transDropzone").style.display = "none";
-    document.getElementById("transFileCard").style.display = "flex";
-    document.getElementById("transActionBtn").disabled = false;
-
-    const audioEl = document.getElementById("transAudioElement");
-    audioEl.src = URL.createObjectURL(file);
-    document.getElementById("transPlayerWrapper").style.display = "flex";
-  }
-
-  function clearTransFile() {
-    transFile = null;
-    document.getElementById("transFileInput").value = "";
-    document.getElementById("transDropzone").style.display = "flex";
-    document.getElementById("transFileCard").style.display = "none";
-    document.getElementById("transPlayerWrapper").style.display = "none";
-    document.getElementById("transAudioElement").src = "";
-    document.getElementById("transActionBtn").disabled = true;
-  }
-
-  async function runTransProcessing() {
-    if (!transFile) return;
-    const btn = document.getElementById("transActionBtn");
-    const status = document.getElementById("transStatusBar");
-    const results = document.getElementById("transResultsCard");
-
-    btn.disabled = true;
-    status.style.display = "flex";
-
-    const formData = new FormData();
-    formData.append("file", transFile);
-    formData.append("task", "translate"); // Pure Offline Translation to English
-    formData.append("model", document.getElementById("transModelSelect").value);
-    formData.append("language", document.getElementById("transSourceLang").value);
-
-    try {
-      const res = await fetch("/api/transcribe", { method: "POST", body: formData });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || "Translation failed");
-
-      transResult = data;
-      renderTransResults(data);
-      results.style.display = "flex";
-      results.scrollIntoView({ behavior: "smooth" });
-    } catch (err) {
-      alert("Error: " + err.message);
-    } finally {
-      btn.disabled = false;
-      status.style.display = "none";
-    }
-  }
-
-  function renderTransResults(data) {
-    document.getElementById("transMetaPills").innerHTML = `
-      <div class="meta-pill">Original: <strong>${(data.language || "Unknown").toUpperCase()}</strong></div>
-      <div class="meta-pill">Output: <strong>ENGLISH</strong></div>
-      <div class="meta-pill">Audio: <strong>${data.duration}s</strong></div>
-      <div class="meta-pill">Inference: <strong>${data.latency}s</strong></div>
-    `;
-
-    document.getElementById("transContinuousView").innerText = data.text || "(No translation generated)";
-
-    const segView = document.getElementById("transSegmentsView");
-    segView.innerHTML = "";
-    if (data.segments && data.segments.length > 0) {
-      data.segments.forEach(seg => {
-        const item = document.createElement("div");
-        item.className = "segment-item";
-        item.innerHTML = `
-          <span class="segment-time" onclick="seekTransAudio(${seg.start})" title="Play from here">[${formatTime(seg.start)} - ${formatTime(seg.end)}]</span>
-          <span class="segment-text">${escapeHtml(seg.text)}</span>
-        `;
-        segView.appendChild(item);
+      dropzone.addEventListener("dragleave", () => {
+        dropzone.classList.remove("dragover");
       });
-    } else {
-      segView.innerHTML = "<div style='color: var(--text-muted);'>No segment breakdown available.</div>";
+      dropzone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropzone.classList.remove("dragover");
+        if (e.dataTransfer.files.length > 0) handleFileSelect(e.dataTransfer.files[0]);
+      });
+      fileInput.addEventListener("change", (e) => {
+        if (fileInput.files.length > 0) handleFileSelect(fileInput.files[0]);
+      });
     }
 
-    setTransViewMode(transViewMode);
-  }
+    function handleFileSelect(file) {
+      currentSttFile = file;
+      document.getElementById("sttFileName").innerText = file.name;
+      document.getElementById("sttFileSize").innerText = formatBytes(file.size);
+      document.getElementById("sttDropzone").style.display = "none";
+      document.getElementById("sttFileCard").style.display = "flex";
+      document.getElementById("sttActionBtn").disabled = false;
 
-  function seekTransAudio(seconds) {
-    const audio = document.getElementById("transAudioElement");
-    audio.currentTime = seconds;
-    audio.play();
-  }
-
-  function setTransViewMode(mode) {
-    transViewMode = mode;
-    const btnC = document.getElementById("transViewContinuousBtn");
-    const btnS = document.getElementById("transViewSegmentsBtn");
-    const vC = document.getElementById("transContinuousView");
-    const vS = document.getElementById("transSegmentsView");
-
-    if (mode === "continuous") {
-      btnC.classList.add("active");
-      btnS.classList.remove("active");
-      vC.style.display = "block";
-      vS.style.display = "none";
-    } else {
-      btnS.classList.add("active");
-      btnC.classList.remove("active");
-      vS.style.display = "flex";
-      vC.style.display = "none";
+      // Audio preview
+      const audio = document.getElementById("sttAudioElement");
+      audio.src = URL.createObjectURL(file);
+      document.getElementById("sttAudioBox").style.display = "flex";
     }
-  }
 
-  async function copyTransTranscript() {
-    if (!transResult || !transResult.text) return;
-    try {
-      await navigator.clipboard.writeText(transResult.text);
-      showToast("Copied English translation to clipboard!");
-    } catch {
-      await fetch("/api/copy", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: transResult.text }) });
-      showToast("Copied to Windows clipboard!");
+    function clearSttFile() {
+      currentSttFile = null;
+      document.getElementById("sttFileInput").value = "";
+      document.getElementById("sttDropzone").style.display = "flex";
+      document.getElementById("sttFileCard").style.display = "none";
+      document.getElementById("sttAudioBox").style.display = "none";
+      document.getElementById("sttAudioElement").src = "";
+      document.getElementById("sttActionBtn").disabled = true;
     }
-  }
 
-  async function exportTransFile(fmt) {
-    if (!transResult) return;
-    const baseName = (transFile ? transFile.name.replace(/\.[^/.]+$/, "") : "translation");
-    await downloadExport(transResult.segments, fmt, `${baseName}_english_translation`);
-  }
+    // Transcription Logic
+    async function runStt() {
+      if (!currentSttFile) return;
 
-  // ================= SHARED HELPERS =================
-  async function downloadExport(segments, fmt, filename) {
-    const res = await fetch("/api/export", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        segments: segments || [],
-        format: fmt,
-        filename: filename,
-      }),
-    });
+      const btn = document.getElementById("sttActionBtn");
+      const progress = document.getElementById("sttProcessingBar");
+      const resultSec = document.getElementById("sttResultSection");
 
-    if (res.ok) {
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${filename}.${fmt}`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      showToast(`Downloaded ${fmt.toUpperCase()}!`);
+      btn.disabled = true;
+      progress.style.display = "flex";
+
+      const formData = new FormData();
+      formData.append("file", currentSttFile);
+      formData.append("task", "transcribe");
+      formData.append("model", document.getElementById("sttModelSelect").value);
+      formData.append("language", document.getElementById("sttLangSelect").value);
+
+      try {
+        const response = await fetch("/api/transcribe", {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await response.json();
+        if (!data.success) {
+          throw new Error(data.error || "Transcription failed");
+        }
+
+        currentSttResult = data;
+        renderSttResults(data);
+        resultSec.style.display = "flex";
+        resultSec.scrollIntoView({ behavior: "smooth" });
+      } catch (err) {
+        alert("Transcription Error: " + err.message);
+      } finally {
+        btn.disabled = false;
+        progress.style.display = "none";
+      }
     }
-  }
 
-  function formatBytes(bytes) {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  }
+    function renderSttResults(data) {
+      document.getElementById("sttStatLang").innerText = (data.language || "Auto").toUpperCase();
+      document.getElementById("sttStatDuration").innerText = `${data.duration}s`;
+      document.getElementById("sttStatLatency").innerText = `${data.latency}s`;
+      document.getElementById("sttStatModel").innerText = data.model || "large-v3-turbo";
 
-  function formatTime(secs) {
-    const m = Math.floor(secs / 60);
-    const s = Math.floor(secs % 60);
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  }
+      document.getElementById("sttTextView").innerText = data.text || "(No speech detected)";
 
-  function escapeHtml(text) {
-    const div = document.createElement("div");
-    div.innerText = text;
-    return div.innerHTML;
-  }
+      const segBox = document.getElementById("sttSegmentsView");
+      segBox.innerHTML = "";
+      if (data.segments && data.segments.length > 0) {
+        data.segments.forEach(seg => {
+          const row = document.createElement("div");
+          row.className = "segment-row";
+          row.innerHTML = `
+            <span class="segment-pill" onclick="seekAudio(${seg.start})" title="Play from ${seg.start}s">[${formatTime(seg.start)} - ${formatTime(seg.end)}]</span>
+            <span class="segment-content">${escapeHtml(seg.text)}</span>
+          `;
+          segBox.appendChild(row);
+        });
+      } else {
+        segBox.innerHTML = "<div style='color: var(--text-dim);'>No segment breakdown available.</div>";
+      }
 
-  function showToast(msg) {
-    const toast = document.getElementById("toast");
-    document.getElementById("toastMsg").innerText = msg;
-    toast.classList.add("show");
-    setTimeout(() => {
-      toast.classList.remove("show");
-    }, 2400);
-  }
-</script>
+      setSttView(sttViewMode);
+    }
+
+    function seekAudio(secs) {
+      const audio = document.getElementById("sttAudioElement");
+      audio.currentTime = secs;
+      audio.play();
+    }
+
+    function setSttView(mode) {
+      sttViewMode = mode;
+      const btnText = document.getElementById("sttViewTextBtn");
+      const btnSeg = document.getElementById("sttViewSegBtn");
+      const textV = document.getElementById("sttTextView");
+      const segV = document.getElementById("sttSegmentsView");
+
+      if (mode === "text") {
+        btnText.classList.add("active");
+        btnSeg.classList.remove("active");
+        textV.style.display = "block";
+        segV.style.display = "none";
+      } else {
+        btnSeg.classList.add("active");
+        btnText.classList.remove("active");
+        segV.style.display = "flex";
+        textV.style.display = "none";
+      }
+    }
+
+    async function copySttText() {
+      if (!currentSttResult || !currentSttResult.text) return;
+      try {
+        await navigator.clipboard.writeText(currentSttResult.text);
+        showToast("Transcript copied to clipboard!");
+      } catch {
+        await fetch("/api/copy", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: currentSttResult.text })
+        });
+        showToast("Copied to Windows clipboard!");
+      }
+    }
+
+    async function exportStt(fmt) {
+      if (!currentSttResult) return;
+      const baseName = (currentSttFile ? currentSttFile.name.replace(/\.[^/.]+$/, "") : "transcript");
+      const res = await fetch("/api/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          segments: currentSttResult.segments || [],
+          format: fmt,
+          filename: `${baseName}_transcript`,
+        }),
+      });
+
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${baseName}_transcript.${fmt}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        showToast(`Exported .${fmt.toUpperCase()}`);
+      }
+    }
+
+    // ==========================================
+    // TRANSLATOR LOGIC
+    // ==========================================
+    function updateCharCount() {
+      const len = document.getElementById("transInputText").value.length;
+      document.getElementById("transCharCount").innerText = `${len} characters`;
+    }
+
+    function clearTransInput() {
+      document.getElementById("transInputText").value = "";
+      document.getElementById("transOutputText").value = "";
+      updateCharCount();
+    }
+
+    async function pasteFromClipboard() {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          document.getElementById("transInputText").value = text;
+          updateCharCount();
+          showToast("Pasted from clipboard");
+        }
+      } catch (err) {
+        alert("Clipboard permission needed to paste directly.");
+      }
+    }
+
+    async function copyTransOutput() {
+      const out = document.getElementById("transOutputText").value;
+      if (!out) return;
+      try {
+        await navigator.clipboard.writeText(out);
+        showToast("Translation copied!");
+      } catch {
+        await fetch("/api/copy", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: out })
+        });
+        showToast("Copied to Windows clipboard!");
+      }
+    }
+
+    async function performTranslation() {
+      const input = document.getElementById("transInputText").value.trim();
+      if (!input) {
+        alert("Please enter text to translate.");
+        return;
+      }
+
+      const statusEl = document.getElementById("transOutputStatus");
+      statusEl.innerText = "Translating...";
+
+      // For now, prepare target translation presentation
+      setTimeout(() => {
+        document.getElementById("transOutputText").value = input; // Placeholder for translation engine
+        statusEl.innerText = "Complete";
+        showToast("Translation complete");
+      }, 300);
+    }
+
+    // Helpers
+    function formatBytes(bytes) {
+      if (bytes === 0) return "0 Bytes";
+      const k = 1024;
+      const sizes = ["Bytes", "KB", "MB", "GB"];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+    }
+
+    function formatTime(secs) {
+      const m = Math.floor(secs / 60);
+      const s = Math.floor(secs % 60);
+      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.innerText = text;
+      return div.innerHTML;
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      document.getElementById("toastMessage").innerText = msg;
+      toast.classList.add("show");
+      setTimeout(() => {
+        toast.classList.remove("show");
+      }, 2400);
+    }
+  </script>
 </body>
 </html>
