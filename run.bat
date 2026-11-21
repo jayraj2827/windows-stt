@@ -24,6 +24,9 @@ taskkill /F /FI "WINDOWTITLE eq Friday STT - Control Hub" >nul 2>&1
 taskkill /F /FI "WINDOWTITLE eq Friday STT — Control Hub" >nul 2>&1
 taskkill /F /FI "WINDOWTITLE eq Windows STT*" >nul 2>&1
 taskkill /F /FI "WINDOWTITLE eq Antigravity STT*" >nul 2>&1
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr :8765 ^| findstr LISTENING') do (
+    taskkill /F /PID %%a >nul 2>&1
+)
 ping 127.0.0.1 -n 2 >nul
 
 :: Launch the fresh background subsystem via pythonw.exe

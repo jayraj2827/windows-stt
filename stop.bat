@@ -26,8 +26,13 @@ taskkill /F /FI "WINDOWTITLE eq Friday STT - Console Debug Mode" >nul 2>&1
 taskkill /F /FI "WINDOWTITLE eq Windows STT*" >nul 2>&1
 taskkill /F /FI "WINDOWTITLE eq Antigravity STT*" >nul 2>&1
 
-:: 4. Force terminate any lingering python.exe running app.main
-powershell -NoProfile -Command "Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like '*app.main*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }" >nul 2>&1
+:: 4. Force terminate any lingering python.exe running app.main or app.web.server
+powershell -NoProfile -Command "Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like '*app.main*' -or $_.CommandLine -like '*app.web.server*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }" >nul 2>&1
+
+:: 5. Cleanly terminate any lingering process listening on Web Studio port 8765
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr :8765 ^| findstr LISTENING') do (
+    taskkill /F /PID %%a >nul 2>&1
+)
 
 echo.
 echo ==============================================================
