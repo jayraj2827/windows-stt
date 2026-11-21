@@ -55,10 +55,20 @@ class WhisperEngine:
         self._lock = threading.Lock()
 
     def load_model(self, model_name: Optional[str] = None) -> Tuple[bool, str]:
-        """Load Faster-Whisper weights into GPU/CPU memory."""
-        if model_name:
-            self.model_name = model_name
+        """
+        Load Faster-Whisper weights into GPU/CPU memory.
+        Includes checkpoint verification: if the requested model is already active,
+        skips redundant reloading to save VRAM and latency.
+        """
+        target_name = model_name if model_name else self.model_name
 
+        # Checkpoint validation: Skip if already loaded in memory
+        if self.is_ready and self.model is not None and self.model_name == target_name:
+            msg = f"Model '{self.model_name}' is already loaded and active on {self.active_device} (Checkpoint Verified)."
+            print(f"[WhisperEngine] {msg}")
+            return True, msg
+
+        self.model_name = target_name
         setup_cuda_dlls()
         from faster_whisper import WhisperModel
 
@@ -114,9 +124,14 @@ class WhisperEngine:
         start_time = time.time()
         with self._lock:
             try:
+                initial_prompt = None
+                if self.language == "hi":
+                    initial_prompt = "नमस्ते, यह हिंदी में है। देवनागरी लिपि।"
+
                 segments, info = self.model.transcribe(
                     audio,
                     language=self.language,
+                    initial_prompt=initial_prompt,
                     beam_size=5,
                     temperature=0.0,
                     vad_filter=True,
@@ -218,10 +233,17 @@ class WhisperEngine:
 
         with self._lock:
             try:
+                # Disambiguate Hindi / Urdu:
+                # If target_lang is 'hi', supply a Devanagari Hindi initial prompt to lock the script
+                initial_prompt = None
+                if target_lang == "hi":
+                    initial_prompt = "नमस्ते, यह हिंदी में है। देवनागरी लिपि।"
+
                 segments_gen, info = self.model.transcribe(
                     file_path,
                     task=task,
                     language=target_lang,
+                    initial_prompt=initial_prompt,
                     beam_size=beam_size,
                     vad_filter=True,
                     vad_parameters=dict(
@@ -230,6 +252,24 @@ class WhisperEngine:
                         threshold=0.30,
                     ),
                 )
+
+                # Auto-correction: Whisper frequently confuses colloquial Hindi with Urdu
+                # If auto-detect scored Hindustani speech as 'ur' (Urdu), re-decode as Devanagari Hindi ('hi')
+                if info and info.language == "ur" and target_lang is None and task == "transcribe":
+                    print("[WhisperEngine] Auto-detect identified 'ur' (Urdu); automatically redirecting to Devanagari Hindi ('hi')...")
+                    segments_gen, info = self.model.transcribe(
+                        file_path,
+                        task=task,
+                        language="hi",
+                        initial_prompt="नमस्ते, यह हिंदी में है। देवनागरी लिपि।",
+                        beam_size=beam_size,
+                        vad_filter=True,
+                        vad_parameters=dict(
+                            min_silence_duration_ms=400,
+                            speech_pad_ms=300,
+                            threshold=0.30,
+                        ),
+                    )
 
                 segments_list = []
                 full_text_parts = []

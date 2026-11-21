@@ -4,11 +4,10 @@ cd /d "%~dp0"
 title Friday Web Studio — Launcher
 
 echo ==============================================================
-echo   Friday Web Studio — Starting Local Server
+echo   Friday Web Studio — FastAPI Local Studio
 echo ==============================================================
 echo    - Acceleration: NVIDIA RTX 4060 GPU (CUDA float16)
 echo    - URL:          http://127.0.0.1:8765
-echo    - Tasks:        Audio-to-Text Transcription ^& Translation
 echo ==============================================================
 
 if not exist ".venv\Scripts\python.exe" (
@@ -17,13 +16,17 @@ if not exist ".venv\Scripts\python.exe" (
     exit /b 1
 )
 
-:: Cleanly terminate any previously running web server on port 8765
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr :8765 ^| findstr LISTENING') do (
-    taskkill /F /PID %%a >nul 2>&1
+:: Check if port 8765 is already active (hosted by Desktop Assistant or existing studio)
+powershell -Command "$client = New-Object System.Net.Sockets.TcpClient; try { $client.Connect('127.0.0.1', 8765); exit 0 } catch { exit 1 }" >nul 2>&1
+if %ERRORLEVEL% EQU 0 (
+    echo [CHECKPOINT] Model is already loaded and active in memory!
+    echo Opening http://127.0.0.1:8765 in your browser...
+    start http://127.0.0.1:8765
+    exit /b 0
 )
 
-:: Launch Web Studio server
-echo Starting Web Studio server and opening your browser...
+:: Otherwise, launch standalone FastAPI Web Studio server
+echo Starting standalone Web Studio server and opening your browser...
 "%~dp0.venv\Scripts\python.exe" -m app.web.server
 
 echo.

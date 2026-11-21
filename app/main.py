@@ -156,9 +156,31 @@ class AppCoordinator(QObject):
                 "Friday STT Ready",
                 f"Model '{self.whisper_engine.model_name}' active on {self.whisper_engine.active_device.upper()}"
             )
+            # Share loaded WhisperEngine with Web Studio and start background FastAPI server
+            self._start_web_studio_background()
         else:
             self.settings_window.gpu_badge.setText("❌ Model Failed")
             self.tray.show_message("Friday STT Error", msg)
+
+    def _start_web_studio_background(self):
+        """Host FastAPI Web Studio server sharing the already loaded model on port 8765."""
+        def _run_server():
+            try:
+                import socket
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    s.settimeout(0.4)
+                    if s.connect_ex(('127.0.0.1', 8765)) == 0:
+                        print("[Friday STT] Web Studio port 8765 is already bound.")
+                        return
+
+                from app.web.server import set_shared_engine, app
+                import uvicorn
+                set_shared_engine(self.whisper_engine)
+                uvicorn.run(app, host="127.0.0.1", port=8765, log_level="warning", access_log=False)
+            except Exception as e:
+                print(f"[Friday STT] Web Studio background server notice: {e}")
+
+        threading.Thread(target=_run_server, daemon=True).start()
 
     def _on_hotkey_start_record(self, mode: str):
         self.sig_start_recording.emit(mode)

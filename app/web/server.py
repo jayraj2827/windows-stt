@@ -30,10 +30,29 @@ _engine_lock = threading.Lock()
 _global_engine: Optional[WhisperEngine] = None
 
 
-def get_web_engine(model_name: str = "large-v3-turbo") -> WhisperEngine:
-    """Retrieve or initialize the shared Whisper engine for Web Studio."""
+def set_shared_engine(engine: WhisperEngine):
+    """Register an already initialized WhisperEngine from Desktop Assistant."""
     global _global_engine
     with _engine_lock:
+        _global_engine = engine
+        print(f"[FastAPI WebStudio] Linked shared WhisperEngine '{engine.model_name}' on {engine.active_device} from Desktop Assistant.")
+
+
+def get_web_engine(model_name: str = "large-v3-turbo") -> WhisperEngine:
+    """
+    Retrieve or initialize the shared Whisper engine for Web Studio.
+    If already loaded by Desktop Assistant or Web Studio, reuses the active model instance.
+    """
+    global _global_engine
+    with _engine_lock:
+        if _global_engine is not None and _global_engine.is_ready and _global_engine.model is not None:
+            # Checkpoint: reuse existing engine if requested model is the same
+            if model_name and _global_engine.model_name != model_name:
+                print(f"[FastAPI WebStudio] Switching engine model from {_global_engine.model_name} to {model_name}...")
+                _global_engine.load_model(model_name)
+            return _global_engine
+
+        # If not already initialized, create and load
         if _global_engine is None:
             _global_engine = WhisperEngine(
                 model_name=model_name,
