@@ -229,11 +229,14 @@ class NLLBTranslator:
 
                 for para in paragraphs:
                     tokens = self.tokenizer.convert_ids_to_tokens(self.tokenizer.encode(para))
-                    # Batch translation with target language prefix
+                    # Batch translation with target language prefix and repetition protection
                     results = self.translator.translate_batch(
                         [tokens],
                         target_prefix=[[resolved_tgt]],
                         beam_size=4,
+                        repetition_penalty=1.25,
+                        no_repeat_ngram_size=3,
+                        max_decoding_length=512,
                         max_batch_size=16,
                     )
                     out_tokens = results[0].hypotheses[0][1:]

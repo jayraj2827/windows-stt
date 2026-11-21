@@ -128,6 +128,10 @@ class AppCoordinator(QObject):
         self.tray.sig_exit.connect(self._exit_app)
 
     def _start_initialization(self):
+        # 1. Bind Web Studio server immediately on port 8765 with shared engine reference
+        # This prevents run_web.bat from spawning a duplicate Python process in VRAM.
+        self._start_web_studio_background()
+
         def load_worker():
             success, msg = self.whisper_engine.load_model()
             self.sig_model_status.emit(success, msg)
@@ -156,8 +160,6 @@ class AppCoordinator(QObject):
                 "Friday STT Ready",
                 f"Model '{self.whisper_engine.model_name}' active on {self.whisper_engine.active_device.upper()}"
             )
-            # Share loaded WhisperEngine with Web Studio and start background FastAPI server
-            self._start_web_studio_background()
         else:
             self.settings_window.gpu_badge.setText("❌ Model Failed")
             self.tray.show_message("Friday STT Error", msg)
